@@ -50,16 +50,18 @@ jobs:
         run: npm run build
         working-directory: ue
 
-      - name: Add the built UE app to the site
+      - name: Assemble the Pages site
         run: |
-          rm -rf _site/ue
-          mkdir -p _site/ue
-          cp -R ue/dist/. _site/ue/
+          mkdir -p ./public
+          cp -R ./_site/. ./public/
+          rm -rf ./public/ue
+          mkdir -p ./public/ue
+          cp -R ./ue/dist/. ./public/ue/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ./_site
+          path: ./public
 
   deploy:
     environment:
