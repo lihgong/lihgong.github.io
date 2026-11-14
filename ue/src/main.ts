@@ -1,5 +1,11 @@
+// The UUID seen during broadcast, used to filter devices
+const ADV_SERVICE_UUID = 0xFE61
+
+// Upon GATT connection, the hooked service
 const SERVICE_UUID = "000061fe-0000-1000-8000-00805f9b34fb";
 const CHARACTERISTIC_UUID = "c6d6dc0d-07f5-47ef-9b59-630622b01fd3";
+
+// The MAC address that already registered to the speaker
 const DEFAULT_MAC = "00E04C239988";
 
 let payloadData: Uint8Array<ArrayBuffer> | null = null;
@@ -50,8 +56,11 @@ async function connectAndWakeSpeaker(button: HTMLButtonElement): Promise<void> {
   try {
     log("Choose the Logitech UE speaker...");
     const device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: [SERVICE_UUID, 0x61fe],
+      filters: [
+        { services: [ADV_SERVICE_UUID] } // Filter
+      ],
+      // the service we needed after connecting to GATT, request permission to browser
+      optionalServices: [SERVICE_UUID],
     });
     log(`Selected: ${device.name ?? "Unnamed device"}`);
 
