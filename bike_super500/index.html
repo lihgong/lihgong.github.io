@@ -256,6 +256,10 @@
     tr.row-clickable:hover { background: rgba(56, 189, 248, 0.08); }
     tr.row-midpoint { background: rgba(168, 85, 247, 0.10); }
     tr.row-cp { background: rgba(245, 158, 11, 0.05); }
+    tr.row-next, .m-card.row-next {
+      box-shadow: inset 3px 0 0 #38bdf8;
+      background: rgba(56, 189, 248, 0.12) !important;
+    }
 
     .tag {
       display: inline-block;
@@ -335,8 +339,7 @@
       .kpi { font-size: 0.86rem; padding: 5px 10px; }
       .kpi strong { font-size: 0.96rem; }
       .container { padding: 10px 10px 30px; gap: 10px; }
-      #map { height: 230px; }
-      .leaflet-control-zoom { display: none; }
+      #map { height: 210px; }
       .legend { gap: 8px; }
       .legend-item { font-size: 0.78rem; }
       .hud { grid-template-columns: 1fr; gap: 0; margin-bottom: 6px; }
@@ -346,13 +349,13 @@
       .hud-label { font-size: 0.84rem; color: var(--muted); }
       .hud-next-title { font-size: 1.06rem; font-weight: 700; color: var(--text); }
       .hud-val { font-size: 1.08rem; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-top: 2px; }
-      .canvas-box { height: 170px; }
+      .canvas-box { height: 155px; }
       .scrubber-row { display: flex; }
       .scrubber-hint { display: none; }
       .preset-btn { padding: 5px 10px; font-size: 0.86rem; text-align: center; }
       .controls { display: none !important; }
       .table-wrap { display: none; }
-      #mobileCards { display: block; }
+      #mobileCards { display: block; max-height: 245px; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
     }
 
     .modal-backdrop {
@@ -549,7 +552,7 @@ const PRESETS = {
 };
 
 // --- Map Setup ---
-const map = L.map("map", { zoomControl: true });
+const map = L.map("map", { zoomControl: false });
 const nlscMap = L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", {
   attribution: "&copy; 國土測繪中心 NLSC",
   maxZoom: 19
@@ -827,12 +830,26 @@ function updateHUD(dKm) {
 
   let nextCp = checkpoints[checkpoints.length - 1];
   let nextRow = computedRows[computedRows.length - 1];
+  let nextIdx = checkpoints.length - 1;
   for (let i = 0; i < checkpoints.length; i++) {
     if (checkpoints[i].dist >= dKm - 0.05) {
       nextCp = checkpoints[i];
       nextRow = computedRows[i] || nextCp;
+      nextIdx = i;
       break;
     }
+  }
+  const mCards = document.querySelectorAll("#mobileCards .m-card");
+  document.querySelectorAll("#planBody tr").forEach((el, i) => {
+    el.classList.toggle("row-next", i === nextIdx);
+  });
+  mCards.forEach((el, i) => {
+    el.classList.toggle("row-next", i === nextIdx);
+  });
+  const mWrap = document.getElementById("mobileCards");
+  if (window.innerWidth <= 768 && mWrap && mCards[nextIdx] && window._lastMIdx !== nextIdx) {
+    window._lastMIdx = nextIdx;
+    mWrap.scrollTop = mCards[nextIdx].offsetTop;
   }
   const remKm = Math.max(0, nextCp.dist - dKm);
   const remGain = Math.max(0, nextCp.gain - pt[4]);
