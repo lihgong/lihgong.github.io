@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#1e293b" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>超極騎士 中部秘境 500K — 路線與配速規劃</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -433,9 +433,20 @@
       display: inline-block;
       margin-top: 2px;
     }
+    .ios-pwa-anchor { display: none; }
     @media (max-width: 768px) {
-      body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-      header { padding: calc(7px + env(safe-area-inset-top)) 8px 7px; gap: 6px; flex-shrink: 0; flex-wrap: nowrap; }
+      html { background: var(--panel); }
+      body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; overscroll-behavior-y: none; }
+      .ios-pwa-anchor {
+        display: block;
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: env(safe-area-inset-top, 0px);
+        background: var(--panel);
+        z-index: 9999;
+        pointer-events: none;
+      }
+      header { position: relative; z-index: 10000; background: var(--panel); padding: calc(16px + env(safe-area-inset-top)) 8px 8px; gap: 6px; flex-shrink: 0; flex-wrap: nowrap; }
       header h1 { font-size: 0.92rem; white-space: nowrap; }
       .hide-m, .sub-badge { display: none; }
       .header-actions { width: auto; flex: 1; justify-content: flex-end; gap: 4px !important; flex-wrap: nowrap !important; }
@@ -502,6 +513,7 @@
   </style>
 </head>
 <body>
+<div class="ios-pwa-anchor"></div>
 <header>
   <div class="header-left">
     <h1><span class="hide-m">超極騎士 </span>中部<span class="hide-m">秘境 </span>500K</h1>
