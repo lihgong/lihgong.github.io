@@ -86,37 +86,30 @@
     }
     .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
     #map { width: 100%; height: 400px; background: #0b1220; }
-    .leaflet-tooltip.cp-label {
-      background: rgba(15, 23, 42, 0.88);
-      color: #f1f5f9;
-      border: 1px solid #475569;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 13px;
-      font-weight: 600;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-      pointer-events: none;
+    .map-float-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .leaflet-tooltip.cp-label::before { display: none; }
-    .leaflet-tooltip.cp-label.lbl-cp { border-color: #f59e0b; color: #fde68a; }
-    .leaflet-tooltip.cp-label.lbl-supply { border-color: #38bdf8; color: #bae6fd; }
-    .leaflet-tooltip.cp-label.lbl-midpoint { border-color: #a855f7; color: #e9d5ff; }
-    .leaflet-tooltip.cp-label.lbl-start,
-    .leaflet-tooltip.cp-label.lbl-finish { border-color: #22c55e; color: #bbf7d0; }
-    .leaflet-tooltip.cp-label.lbl-meal { box-shadow: 0 0 0 1px #fb7185, 0 2px 6px rgba(0,0,0,0.5); }
-    .meal-btn {
-      padding: 2px 7px;
-      border-radius: 5px;
-      font-size: 0.78rem;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--muted);
+    .map-float-btn {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.78);
+      color: #e2e8f0;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 6px;
+      padding: 0;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.35);
     }
-    .meal-btn.active {
-      background: rgba(244, 63, 94, 0.2);
-      border-color: #fb7185;
-      color: #fda4af;
-      font-weight: 600;
+    .map-float-btn:hover { background: #1e293b; }
+    .map-float-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
     }
 
     /* Elevation Profile */
@@ -166,7 +159,7 @@
     }
     #elevCanvas { width: 100%; height: 100%; display: block; }
     .scrubber-row {
-      display: flex;
+      display: none;
       align-items: center;
       gap: 12px;
       margin-top: 8px;
@@ -281,9 +274,6 @@
     .buf-tight { color: #fbbf24; font-weight: 600; }
     .buf-late { color: #f87171; font-weight: 700; }
 
-    .rest-input { width: 64px; text-align: right; padding: 4px 6px; }
-    .note-input { width: 145px; padding: 4px 8px; font-size: 0.92rem; }
-
     /* Mobile Responsive Layout */
     #mobileCards { display: none; }
     #toggleCtrlBtn { display: none; }
@@ -346,20 +336,21 @@
       .kpi strong { font-size: 0.96rem; }
       .container { padding: 10px 10px 30px; gap: 10px; }
       #map { height: 230px; }
+      .leaflet-control-zoom { display: none; }
       .legend { gap: 8px; }
       .legend-item { font-size: 0.78rem; }
-      .hud { grid-template-columns: 1fr 1fr 1.25fr; gap: 5px; margin-bottom: 6px; }
+      .hud { grid-template-columns: 1fr; gap: 0; margin-bottom: 6px; }
       .hud-hide-m { display: none; }
       .hud-next-m { grid-column: 1 / -1; }
-      .hud-box { padding: 5px 8px; }
-      .hud-label { font-size: 0.74rem; }
-      .hud-val { font-size: 1rem; }
+      .hud-box { padding: 6px 10px; }
+      .hud-label { font-size: 0.84rem; color: var(--muted); }
+      .hud-next-title { font-size: 1.06rem; font-weight: 700; color: var(--text); }
+      .hud-val { font-size: 1.08rem; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-top: 2px; }
       .canvas-box { height: 170px; }
+      .scrubber-row { display: flex; }
       .scrubber-hint { display: none; }
       .preset-btn { padding: 5px 10px; font-size: 0.86rem; text-align: center; }
-      .controls { padding: 8px 10px; display: flex !important; }
-      .controls .ctrl-group { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .controls button { width: 100%; }
+      .controls { display: none !important; }
       .table-wrap { display: none; }
       #mobileCards { display: block; }
     }
@@ -427,29 +418,13 @@
 <div class="container">
   <!-- Map Card -->
   <div class="card">
-    <div class="map-bar">
-      <div class="legend">
-        <span class="legend-item"><span class="dot" style="background:#22c55e"></span>起點 / 終點</span>
-        <span class="legend-item"><span class="dot" style="background:#f59e0b"></span>官方檢查點 (CP1~CP13)</span>
-        <span class="legend-item"><span class="dot" style="background:#38bdf8"></span>爬坡前超商補給</span>
-        <span class="legend-item"><span class="dot" style="background:#a855f7"></span>300K 中繼 (箱根生活館)</span>
-        <span class="legend-item"><span class="dot" style="background:#ef4444"></span>目前游標位置</span>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;">
-        <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
-          <input type="checkbox" id="showLabels" /> 顯示站點名稱
-        </label>
-        <button id="gpsBtn" type="button">📍 我的位置</button>
-        <button id="resetZoomBtn">顯示全路線</button>
-      </div>
-    </div>
     <div id="map"></div>
   </div>
 
   <!-- Elevation Profile Card -->
   <div class="card elev-wrap">
     <div class="hud">
-      <div class="hud-box">
+      <div class="hud-box hud-hide-m">
         <div class="hud-label">目前里程</div>
         <div class="hud-val accent" id="hudDist">0.0 km</div>
       </div>
@@ -457,7 +432,7 @@
         <div class="hud-label">海拔高度</div>
         <div class="hud-val" id="hudEle">105 m</div>
       </div>
-      <div class="hud-box">
+      <div class="hud-box hud-hide-m">
         <div class="hud-label">累計爬升</div>
         <div class="hud-val amber" id="hudGain">0 m</div>
       </div>
@@ -465,23 +440,20 @@
         <div class="hud-label">平均坡度</div>
         <div class="hud-val" id="hudGrade">0.0%</div>
       </div>
-      <div class="hud-box">
+      <div class="hud-box hud-hide-m">
         <div class="hud-label">預估通過時刻</div>
         <div class="hud-val" id="hudTime">1/1 06:00</div>
       </div>
       <div class="hud-box hud-next-m">
-        <div class="hud-label">距離下一站</div>
-        <div class="hud-val" id="hudNear" style="font-size:1.05rem;">豬事圓滿公園</div>
+        <div class="hud-label" id="hudNextLabel">下一站</div>
+        <div class="hud-val" id="hudNear">剩 0.0 km / +0 m</div>
       </div>
     </div>
     <div class="canvas-box" id="canvasBox" title="滑鼠左右移動瀏覽，或使用滾輪微調里程（按住 Shift 滾輪可快轉 ±10km）">
       <canvas id="elevCanvas"></canvas>
     </div>
     <div class="scrubber-row">
-      <span>0 km</span>
       <input type="range" id="distSlider" min="0" max="501.44" step="0.5" value="0" />
-      <span>501.4 km</span>
-      <span class="scrubber-hint" style="color:var(--accent)">提示：在高度圖上滾動滑鼠滾輪可直接前後推進里程（Shift+滾輪 ±10km）</span>
     </div>
   </div>
 
@@ -507,7 +479,7 @@
             <th>累計爬升</th>
             <th>海拔</th>
             <th>段均速</th>
-            <th>備註 (可編輯)</th>
+            <th>備註</th>
           </tr>
         </thead>
         <tbody id="planBody"></tbody>
@@ -609,21 +581,38 @@ const latlngs = track.map(p => [p[0], p[1]]);
 const routeLine = L.polyline(latlngs, { color: "#38bdf8", weight: 4, opacity: 0.85 }).addTo(map);
 map.fitBounds(routeLine.getBounds(), { padding: [24, 24] });
 
+const MapToolsControl = L.Control.extend({
+  options: { position: "bottomleft" },
+  onAdd: function () {
+    const wrap = L.DomUtil.create("div", "map-float-wrap");
+    L.DomEvent.disableClickPropagation(wrap);
+    wrap.innerHTML = `
+      <button id="gpsBtn" type="button" class="map-float-btn" title="我的位置">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="8"/></svg>
+      </button>
+      <button id="resetZoomBtn" type="button" class="map-float-btn" title="顯示全路線">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+    `;
+    return wrap;
+  }
+});
+new MapToolsControl().addTo(map);
+
 document.getElementById("resetZoomBtn").addEventListener("click", () => {
   map.fitBounds(routeLine.getBounds(), { padding: [24, 24] });
 });
 
 const typeColors = {
-  start: "#22c55e",
-  finish: "#22c55e",
+  start: "#f59e0b",
+  finish: "#f59e0b",
   cp: "#f59e0b",
-  supply: "#38bdf8",
-  midpoint: "#a855f7",
+  supply: "#f59e0b",
+  midpoint: "#f59e0b",
   peak: "#64748b",
   valley: "#64748b"
 };
 
-const cpLabelLayers = [];
 checkpoints.forEach(cp => {
   const isMinor = cp.type === "peak" || cp.type === "valley";
   const marker = L.circleMarker([cp.lat, cp.lon], {
@@ -635,34 +624,7 @@ checkpoints.forEach(cp => {
   }).addTo(map);
   marker.bindTooltip(`<b>${cp.name}</b><br>${cp.dist} km｜海拔 ${cp.ele} m｜累計爬升 ${cp.gain} m`, { direction: "top" });
   marker.on("click", () => setCursorDist(cp.dist, true));
-
-  if (!isMinor) {
-    const lbl = L.tooltip({
-      permanent: true,
-      direction: "right",
-      offset: [8, 0],
-      className: `cp-label lbl-${cp.type}`
-    })
-      .setLatLng([cp.lat, cp.lon])
-      .setContent(getMapLabelText(cp));
-    cpLabelLayers.push({ cp, lbl });
-  }
 });
-
-function getMapLabelText(cp) {
-  return cp.name.replace(/ \(.*\)/, "");
-}
-
-function refreshMapLabels() {
-  const show = document.getElementById("showLabels").checked;
-  cpLabelLayers.forEach(({ cp, lbl }) => {
-    lbl.setContent(getMapLabelText(cp));
-    if (show) lbl.addTo(map);
-    else map.removeLayer(lbl);
-  });
-}
-
-document.getElementById("showLabels").addEventListener("change", refreshMapLabels);
 
 const cursorMarker = L.circleMarker([track[0][0], track[0][1]], {
   radius: 8,
@@ -777,21 +739,17 @@ function renderTable() {
       <td><strong>${r.dist.toFixed(1)}</strong></td>
       <td style="text-align:left;"><strong>${r.name}</strong></td>
       <td>${formatClock(r.arrMs)}</td>
-      <td><input type="number" class="rest-input" min="0" max="300" step="5" value="${r.rest}" data-idx="${idx}" /></td>
+      <td>${r.rest}</td>
       <td>${idx === 0 ? "-" : formatDuration(r.rideH)}</td>
       <td>${idx === 0 ? "-" : r.segDist.toFixed(1)}</td>
       <td>${idx === 0 ? "-" : r.segGain.toFixed(0)}</td>
       <td>${r.gain.toFixed(0)}</td>
       <td>${r.ele.toFixed(0)}m</td>
       <td>${idx === 0 ? "-" : r.speed.toFixed(1)}</td>
-      <td><input type="text" class="note-input" value="${r.note.replace(/"/g, '&quot;')}" data-idx="${idx}" /></td>
+      <td style="color:var(--muted);">${r.note || ""}</td>
     `;
 
-    tr.addEventListener("click", (e) => {
-      if (e.target.tagName === "INPUT") return;
-      setCursorDist(r.dist, true);
-    });
-
+    tr.addEventListener("click", () => setCursorDist(r.dist, true));
     tbody.appendChild(tr);
 
     const card = document.createElement("div");
@@ -807,29 +765,11 @@ function renderTable() {
       </div>
       <div class="m-row2">
         <span>${segInfo} ${noteBadge}</span>
-        <span>休 <input type="number" class="rest-input" min="0" max="300" step="5" value="${r.rest}" data-idx="${idx}" style="width:48px;padding:2px 4px;" /> 分</span>
+        <span>${r.rest > 0 ? `休 ${r.rest} 分` : ""}</span>
       </div>
     `;
-    card.addEventListener("click", (e) => {
-      if (e.target.tagName === "INPUT") return;
-      setCursorDist(r.dist, true);
-    });
+    card.addEventListener("click", () => setCursorDist(r.dist, true));
     mWrap.appendChild(card);
-  });
-
-  document.querySelectorAll(".rest-input").forEach(inp => {
-    inp.addEventListener("change", (e) => {
-      const idx = parseInt(e.target.dataset.idx, 10);
-      checkpoints[idx].rest = Math.max(0, parseInt(e.target.value, 10) || 0);
-      recalcPlan();
-    });
-  });
-
-  tbody.querySelectorAll(".note-input").forEach(inp => {
-    inp.addEventListener("change", (e) => {
-      const idx = parseInt(e.target.dataset.idx, 10);
-      checkpoints[idx].note = e.target.value;
-    });
   });
 }
 
@@ -886,17 +826,28 @@ function updateHUD(dKm) {
   document.getElementById("hudTime").textContent = formatClock(estimateMsAtDist(dKm));
 
   let nextCp = checkpoints[checkpoints.length - 1];
+  let nextRow = computedRows[computedRows.length - 1];
   for (let i = 0; i < checkpoints.length; i++) {
     if (checkpoints[i].dist >= dKm - 0.05) {
       nextCp = checkpoints[i];
+      nextRow = computedRows[i] || nextCp;
       break;
     }
   }
   const remKm = Math.max(0, nextCp.dist - dKm);
   const remGain = Math.max(0, nextCp.gain - pt[4]);
-  document.getElementById("hudNear").textContent = remKm < 0.1
-    ? `已抵達 ${nextCp.name}`
-    : `${nextCp.name}（剩 ${remKm.toFixed(1)} km / +${remGain.toFixed(0)} m）`;
+  const shortNext = nextCp.name.replace(/ \(.*\)/, "");
+  const isMobile = window.innerWidth <= 768;
+  document.getElementById("hudNextLabel").innerHTML = isMobile
+    ? `下一站 <span class="hud-next-title">${shortNext}</span>`
+    : `下一站：${shortNext}`;
+  const leftHtml = remKm < 0.1
+    ? `<span style="color:#4ade80;">已抵達 ${shortNext}</span>`
+    : `<span style="color:var(--accent);">剩 ${remKm.toFixed(1)} km</span> <span style="color:var(--muted);font-weight:400;">/</span> <span style="color:var(--amber);">+${remGain.toFixed(0)} m</span>`;
+  const targetClock = nextRow && nextRow.arrMs ? formatClockShort(nextRow.arrMs) : formatClockShort(estimateMsAtDist(nextCp.dist));
+  document.getElementById("hudNear").innerHTML = isMobile
+    ? `<span>${leftHtml}</span><span style="font-size:0.96rem;color:var(--text);">目標 ${targetClock} 到</span>`
+    : leftHtml;
 
   cursorMarker.setLatLng([pt[0], pt[1]]);
 }
@@ -1092,21 +1043,18 @@ document.getElementById("gpsBtn").addEventListener("click", () => {
     gpsWatchId = null;
     if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
     if (gpsCircle) { map.removeLayer(gpsCircle); gpsCircle = null; }
-    btn.textContent = "📍 我的位置";
-    btn.classList.remove("primary");
+    btn.classList.remove("active");
     return;
   }
   if (!navigator.geolocation) {
     alert("此瀏覽器不支援 GPS 定位");
     return;
   }
-  btn.textContent = "📍 定位中...";
   gpsFirstFix = true;
   gpsWatchId = navigator.geolocation.watchPosition(
     (pos) => {
       const { latitude, longitude, accuracy } = pos.coords;
-      btn.textContent = "📍 定位中 (點擊關閉)";
-      btn.classList.add("primary");
+      btn.classList.add("active");
 
       if (!gpsMarker) {
         gpsCircle = L.circle([latitude, longitude], {
@@ -1162,8 +1110,7 @@ document.getElementById("gpsBtn").addEventListener("click", () => {
       alert("無法取得位置（請確認使用 HTTPS 網址並允許定位權限）：" + err.message);
       navigator.geolocation.clearWatch(gpsWatchId);
       gpsWatchId = null;
-      btn.textContent = "📍 我的位置";
-      btn.classList.remove("primary");
+      btn.classList.remove("active");
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
