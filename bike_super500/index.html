@@ -337,25 +337,29 @@
       font-size: 0.8rem;
     }
     @media (max-width: 768px) {
-      header { padding: 10px 12px; }
-      header h1 { font-size: 1.1rem; }
+      header { padding: 10px 12px; gap: 8px; }
+      header h1 { font-size: 1.08rem; }
       .sub-badge { font-size: 0.8rem; }
-      .top-kpis { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-      .kpi { font-size: 0.84rem; padding: 5px 8px; }
+      .header-actions { width: 100%; justify-content: space-between; gap: 8px; }
+      .top-kpis { width: auto; display: flex; }
+      .kpi { font-size: 0.86rem; padding: 5px 10px; }
       .kpi strong { font-size: 0.96rem; }
       .container { padding: 10px 10px 30px; gap: 10px; }
       #map { height: 230px; }
       .legend { gap: 8px; }
       .legend-item { font-size: 0.78rem; }
-      .hud { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .hud { grid-template-columns: 1fr 1fr 1.25fr; gap: 5px; margin-bottom: 6px; }
       .hud-hide-m { display: none; }
-      .hud-val { font-size: 1.1rem; }
+      .hud-next-m { grid-column: 1 / -1; }
+      .hud-box { padding: 5px 8px; }
+      .hud-label { font-size: 0.74rem; }
+      .hud-val { font-size: 1rem; }
       .canvas-box { height: 170px; }
       .scrubber-hint { display: none; }
-      .preset-bar { padding: 8px 10px; gap: 6px; }
-      .preset-btn { flex: 1; padding: 6px 6px; font-size: 0.85rem; text-align: center; }
-      #presetSummary { width: 100%; margin-left: 0 !important; font-size: 0.82rem; }
-      .controls { padding: 10px; display: flex !important; }
+      .preset-btn { padding: 5px 10px; font-size: 0.86rem; text-align: center; }
+      .controls { padding: 8px 10px; display: flex !important; }
+      .controls .ctrl-group { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .controls button { width: 100%; }
       .table-wrap { display: none; }
       #mobileCards { display: block; }
     }
@@ -408,7 +412,7 @@
     <h1>超極騎士 — 中部秘境 500K 互動路線與配速規劃</h1>
     <div class="sub-badge">2027/01/01 06:00 出發｜<span id="presetSummary">總計 --h（純騎 --h ＋ 總休 --h）</span></div>
   </div>
-  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+  <div class="header-actions" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
     <div style="display:flex;align-items:center;gap:6px;">
       <button type="button" class="preset-btn" data-preset="26H">26H</button>
       <button type="button" class="preset-btn" data-preset="28H">28H</button>
@@ -416,7 +420,6 @@
     </div>
     <div class="top-kpis">
       <div class="kpi ok" id="kpiFinish">預估完賽 <strong>--</strong></div>
-      <div class="kpi warn" id="kpiBuffer">34H 關門餘裕 <strong>--</strong></div>
     </div>
   </div>
 </header>
@@ -450,7 +453,7 @@
         <div class="hud-label">目前里程</div>
         <div class="hud-val accent" id="hudDist">0.0 km</div>
       </div>
-      <div class="hud-box">
+      <div class="hud-box hud-hide-m">
         <div class="hud-label">海拔高度</div>
         <div class="hud-val" id="hudEle">105 m</div>
       </div>
@@ -466,8 +469,8 @@
         <div class="hud-label">預估通過時刻</div>
         <div class="hud-val" id="hudTime">1/1 06:00</div>
       </div>
-      <div class="hud-box hud-hide-m">
-        <div class="hud-label">最近檢查點 / 補給站</div>
+      <div class="hud-box hud-next-m">
+        <div class="hud-label">距離下一站</div>
         <div class="hud-val" id="hudNear" style="font-size:1.05rem;">豬事圓滿公園</div>
       </div>
     </div>
@@ -484,10 +487,7 @@
 
   <!-- Pacing & Supply Table Card -->
   <div class="card">
-    <div class="controls" id="ctrlPanel">
-      <div class="ctrl-group" style="color:var(--muted);font-size:0.88rem;">
-        <span>點選上方 26H / 28H / 32H 切換參考配速，或直接修改各站「休息(分)」與「備註」</span>
-      </div>
+    <div class="controls" id="ctrlPanel" style="justify-content:flex-end;">
       <div class="ctrl-group">
         <button id="exportCsvBtn">匯出 CSV (試算表用)</button>
         <button class="primary" id="stickerBtn">產生自行車上管貼</button>
@@ -572,7 +572,7 @@ let activePreset = { flat: 24.9, slopeK: 2.79, fatigue: 0.85, cutoffMs: CUTOFF_3
 
 const PRESETS = {
   "26H": { flat: 27.5, slopeK: 2.55, fatigue: 0.92, restNorm: 6, restMid: 15, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
-  "28H": { flat: 26.0, slopeK: 2.65, fatigue: 0.90, restNorm: 8, restMid: 20, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
+  "28H": { flat: 26.5, slopeK: 2.62, fatigue: 0.90, restNorm: 8, restMid: 20, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
   "32H": { flat: 24.9, slopeK: 2.79, fatigue: 0.85, restNorm: 10, restMid: 30, cutoffMs: CUTOFF_34_MS, cutoffLabel: "34H 關門餘裕" }
 };
 
@@ -750,11 +750,10 @@ function recalcPlan() {
   });
 
   const last = computedRows[computedRows.length - 1];
-  const bufH = (activePreset.cutoffMs - last.arrMs) / 3600000;
-  document.querySelector("#kpiFinish strong").textContent = formatClockPlain(last.arrMs);
-  const kpiBuf = document.getElementById("kpiBuffer");
-  kpiBuf.innerHTML = `${activePreset.cutoffLabel} <strong>${(bufH >= 0 ? "+" : "") + bufH.toFixed(1)} 小時</strong>`;
-  kpiBuf.className = "kpi " + (bufH >= 1 ? "ok" : bufH >= 0 ? "warn" : "danger");
+  const bufMin = Math.round((activePreset.cutoffMs - last.arrMs) / 60000);
+  const kpiFin = document.getElementById("kpiFinish");
+  kpiFin.querySelector("strong").textContent = formatClockPlain(last.arrMs);
+  kpiFin.className = "kpi " + (bufMin >= 15 ? "ok" : bufMin >= 0 ? "warn" : "danger");
   document.getElementById("presetSummary").textContent =
     `總計 ${last.arrHours.toFixed(1)}h（純騎 ${cumRideH.toFixed(1)}h ＋ 總休 ${(cumRestMin / 60).toFixed(1)}h）`;
 
@@ -798,7 +797,7 @@ function renderTable() {
     const card = document.createElement("div");
     card.className = "m-card" +
       (r.type === "midpoint" ? " row-midpoint" : r.type === "cp" ? " row-cp" : "");
-    const segInfo = idx === 0 ? "起點" : `+${r.segDist.toFixed(1)}km / +${r.segGain.toFixed(0)}m · ${formatDuration(r.rideH)}`;
+    const segInfo = idx === 0 ? "起點" : `${r.segDist.toFixed(1)}km / +${r.segGain.toFixed(0)}m · ${formatDuration(r.rideH)}`;
     const noteBadge = r.note ? `<span class="m-note">${r.note}</span>` : "";
     card.innerHTML = `
       <div class="m-row1">
@@ -886,14 +885,18 @@ function updateHUD(dKm) {
   document.getElementById("hudGrade").textContent = `${grade >= 0 ? "+" : ""}${grade.toFixed(1)}%`;
   document.getElementById("hudTime").textContent = formatClock(estimateMsAtDist(dKm));
 
-  let nearest = checkpoints[0];
-  let bestD = Infinity;
-  checkpoints.forEach(cp => {
-    const diff = Math.abs(cp.dist - dKm);
-    if (diff < bestD) { bestD = diff; nearest = cp; }
-  });
-  const dir = nearest.dist >= dKm ? "前方" : "剛過";
-  document.getElementById("hudNear").textContent = `${nearest.name} (${dir} ${bestD.toFixed(1)} km)`;
+  let nextCp = checkpoints[checkpoints.length - 1];
+  for (let i = 0; i < checkpoints.length; i++) {
+    if (checkpoints[i].dist >= dKm - 0.05) {
+      nextCp = checkpoints[i];
+      break;
+    }
+  }
+  const remKm = Math.max(0, nextCp.dist - dKm);
+  const remGain = Math.max(0, nextCp.gain - pt[4]);
+  document.getElementById("hudNear").textContent = remKm < 0.1
+    ? `已抵達 ${nextCp.name}`
+    : `${nextCp.name}（剩 ${remKm.toFixed(1)} km / +${remGain.toFixed(0)} m）`;
 
   cursorMarker.setLatLng([pt[0], pt[1]]);
 }
@@ -1129,11 +1132,30 @@ document.getElementById("gpsBtn").addEventListener("click", () => {
         gpsFirstFix = false;
         map.setView([latitude, longitude], 13);
         let bestD = Infinity, bestKm = 0;
+        const distsToGps = new Array(track.length);
         for (let i = 0; i < track.length; i++) {
           const d = haversineKm(latitude, longitude, track[i][0], track[i][1]);
+          distsToGps[i] = d;
           if (d < bestD) { bestD = d; bestKm = track[i][3]; }
         }
-        if (bestD < 15) setCursorDist(bestKm, false);
+        if (bestD < 15) {
+          const nowMs = Date.now();
+          const inEvent = nowMs >= START_MS - 3600000 && nowMs <= CUTOFF_34_MS + 14400000;
+          if (inEvent) {
+            const thresh = Math.max(0.5, bestD + 0.3);
+            let bestTimeDiff = Infinity;
+            for (let i = 0; i < track.length; i++) {
+              if (distsToGps[i] <= thresh) {
+                const tDiff = Math.abs(estimateMsAtDist(track[i][3]) - nowMs);
+                if (tDiff < bestTimeDiff) {
+                  bestTimeDiff = tDiff;
+                  bestKm = track[i][3];
+                }
+              }
+            }
+          }
+          setCursorDist(bestKm, false);
+        }
       }
     },
     (err) => {
