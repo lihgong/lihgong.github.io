@@ -11,16 +11,16 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --panel2: #273449;
-      --border: #334155;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --amber: #f59e0b;
-      --green: #22c55e;
-      --purple: #a855f7;
+      --bg: #0c0d10;
+      --panel: #15171c;
+      --panel2: #1c1f26;
+      --border: #2a2e38;
+      --text: #f5f6f8;
+      --muted: #8b92a0;
+      --accent: #ec9430;
+      --amber: #ec9430;
+      --green: #f5f6f8;
+      --purple: #8b92a0;
       --red: #ef4444;
     }
     * { box-sizing: border-box; }
@@ -89,11 +89,12 @@
     }
     .header-tool-btn:hover { background: var(--border); }
     .header-tool-btn.primary {
-      background: #0284c7;
-      border-color: #0ea5e9;
-      font-weight: 600;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #111317;
+      font-weight: 700;
     }
-    .header-tool-btn.primary:hover { background: #0369a1; }
+    .header-tool-btn.primary:hover { background: #d97d18; }
 
     /* Map */
     .map-bar {
@@ -141,9 +142,9 @@
     }
     .map-float-btn:hover { background: #1e293b; }
     .map-float-btn.active {
-      background: #0284c7;
-      border-color: #38bdf8;
-      color: #ffffff;
+      background: var(--accent);
+      border-color: #f5a642;
+      color: #111317;
     }
     .map-gps-pill {
       width: auto;
@@ -182,42 +183,7 @@
     }
 
     /* Elevation Profile */
-    .elev-wrap { padding: 10px 12px; }
-    .hud {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-      gap: 6px;
-      margin-bottom: 6px;
-    }
-    @media (min-width: 960px) {
-      .hud {
-        grid-template-columns: 0.9fr 0.75fr 0.85fr 0.8fr 1fr 1.8fr;
-      }
-    }
-    .hud-box {
-      background: var(--panel2);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 4px 8px;
-      min-width: 0;
-    }
-    .hud-label {
-      font-size: 0.75rem;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .hud-val {
-      font-size: 1.02rem;
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .hud-val.accent { color: var(--accent); }
-    .hud-val.amber { color: var(--amber); }
+    .elev-wrap { padding: 8px 10px; }
 
     .canvas-box {
       position: relative;
@@ -294,9 +260,9 @@
       color: var(--muted);
     }
     .preset-btn.active {
-      background: rgba(56, 189, 248, 0.2);
-      border-color: #38bdf8;
-      color: #f1f5f9;
+      background: rgba(236, 148, 48, 0.16);
+      border-color: var(--accent);
+      color: var(--text);
     }
 
     .table-wrap { overflow: auto; }
@@ -336,26 +302,27 @@
         width: 100%;
         padding: 10px 12px;
         display: grid;
-        grid-template-columns: minmax(420px, 46%) 1fr;
-        grid-template-rows: 1fr auto;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 5fr 1fr;
         grid-template-areas:
           "map plan"
           "elev plan";
         gap: 10px;
       }
       .map-card { grid-area: map; display: flex; flex-direction: column; min-height: 0; }
-      .elev-card { grid-area: elev; min-height: 0; }
+      .elev-card { grid-area: elev; min-height: 0; display: flex; flex-direction: column; }
+      .canvas-box { flex: 1; height: 100%; min-height: 0; }
       .plan-card { grid-area: plan; display: flex; flex-direction: column; min-height: 0; }
       #map { flex: 1; height: 100%; min-height: 0; }
       .table-wrap { flex: 1; min-height: 0; }
     }
     tr.row-clickable { cursor: pointer; }
-    tr.row-clickable:hover { background: rgba(56, 189, 248, 0.08); }
-    tr.row-midpoint { background: rgba(168, 85, 247, 0.10); }
-    tr.row-cp { background: rgba(245, 158, 11, 0.05); }
+    tr.row-clickable:hover { background: rgba(255, 255, 255, 0.04); }
+    tr.row-midpoint { background: transparent; }
+    tr.row-cp { background: transparent; }
     tr.row-next, .m-card.row-next {
-      box-shadow: inset 3px 0 0 #38bdf8;
-      background: rgba(56, 189, 248, 0.12) !important;
+      box-shadow: inset 3px 0 0 var(--accent);
+      background: rgba(236, 148, 48, 0.10) !important;
     }
 
     .tag {
@@ -386,8 +353,8 @@
       gap: 5px;
       cursor: pointer;
     }
-    .m-card.row-midpoint { background: rgba(168, 85, 247, 0.12); }
-    .m-card.row-cp { background: rgba(245, 158, 11, 0.05); }
+    .m-card.row-midpoint { background: transparent; }
+    .m-card.row-cp { background: transparent; }
     .m-row1 {
       display: flex;
       align-items: center;
@@ -396,7 +363,7 @@
       font-size: 0.98rem;
     }
     .m-km {
-      color: var(--accent);
+      color: var(--text);
       font-weight: 700;
       min-width: 52px;
     }
@@ -421,11 +388,12 @@
       color: var(--muted);
     }
     .m-note {
-      background: rgba(56, 189, 248, 0.12);
-      color: #bae6fd;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+      border: 1px solid var(--border);
       padding: 1px 6px;
       border-radius: 4px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
     }
     .m-card.row-next .m-seg {
       font-size: 1.08rem;
@@ -544,33 +512,7 @@
 
   <!-- Elevation Profile Card -->
   <div class="card elev-card elev-wrap">
-    <div class="hud">
-      <div class="hud-box hud-hide-m">
-        <div class="hud-label">目前里程</div>
-        <div class="hud-val accent" id="hudDist">0.0 km</div>
-      </div>
-      <div class="hud-box hud-hide-m">
-        <div class="hud-label">海拔高度</div>
-        <div class="hud-val" id="hudEle">105 m</div>
-      </div>
-      <div class="hud-box hud-hide-m">
-        <div class="hud-label">累計爬升</div>
-        <div class="hud-val amber" id="hudGain">0 m</div>
-      </div>
-      <div class="hud-box hud-hide-m">
-        <div class="hud-label">平均坡度</div>
-        <div class="hud-val" id="hudGrade">0.0%</div>
-      </div>
-      <div class="hud-box hud-hide-m">
-        <div class="hud-label">預估通過時刻</div>
-        <div class="hud-val" id="hudTime">1/1 06:00</div>
-      </div>
-      <div class="hud-box hud-next-m">
-        <div class="hud-label" id="hudNextLabel">下一站</div>
-        <div class="hud-val" id="hudNear">剩 0.0 km / +0 m</div>
-      </div>
-    </div>
-    <div class="canvas-box" id="canvasBox" title="滑鼠左右移動瀏覽，或使用滾輪微調里程（按住 Shift 滾輪可快轉 ±10km）">
+    <div class="canvas-box" id="canvasBox">
       <canvas id="elevCanvas"></canvas>
     </div>
     <div class="scrubber-row">
@@ -584,7 +526,7 @@
       <table>
         <thead>
           <tr>
-            <th>里程</th>
+            <th>里程(km)</th>
             <th>地點</th>
             <th>預計抵達</th>
             <th class="col-seg">區段</th>
@@ -660,7 +602,7 @@ const PRESETS = {
 };
 
 // --- Map Setup ---
-const map = L.map("map", { zoomControl: false, zoomSnap: 1 });
+const map = L.map("map", { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.5 });
 const nlscMap = L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", {
   attribution: "&copy; 國土測繪中心 NLSC",
   maxZoom: 19,
@@ -691,9 +633,9 @@ L.control.layers({
 }, null, { position: "topright" }).addTo(map);
 
 const latlngs = track.map(p => [p[0], p[1]]);
-const routeLine = L.polyline(latlngs, { color: "#38bdf8", weight: 4, opacity: 0.85 }).addTo(map);
+const routeLine = L.polyline(latlngs, { color: "#ec9430", weight: 4.5, opacity: 0.9 }).addTo(map);
 function fitRouteBounds() {
-  map.fitBounds(routeLine.getBounds(), { padding: [4, 4] });
+  map.fitBounds(routeLine.getBounds(), { padding: window.innerWidth >= 1024 ? [6, 6] : [2, 2] });
 }
 fitRouteBounds();
 
@@ -704,7 +646,7 @@ const MapToolsControl = L.Control.extend({
     L.DomEvent.disableClickPropagation(wrap);
     wrap.innerHTML = `
       <button id="resetZoomBtn" type="button" class="map-float-btn" title="顯示全路線">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
       </button>
       <div class="map-gps-row">
         <button id="gpsBtn" type="button" class="map-float-btn map-gps-pill" title="同步目前位置到路線與下一站">
@@ -722,11 +664,11 @@ new MapToolsControl().addTo(map);
 document.getElementById("resetZoomBtn").addEventListener("click", fitRouteBounds);
 
 const typeColors = {
-  start: "#f59e0b",
-  finish: "#f59e0b",
-  cp: "#f59e0b",
-  supply: "#f59e0b",
-  midpoint: "#f59e0b",
+  start: "#ffffff",
+  finish: "#ffffff",
+  cp: "#ffffff",
+  supply: "#ffffff",
+  midpoint: "#ffffff",
   peak: "#64748b",
   valley: "#64748b"
 };
@@ -734,9 +676,9 @@ const typeColors = {
 checkpoints.forEach(cp => {
   const isMinor = cp.type === "peak" || cp.type === "valley";
   const marker = L.circleMarker([cp.lat, cp.lon], {
-    radius: isMinor ? 4 : 7,
-    color: "#0f172a",
-    weight: 1.5,
+    radius: isMinor ? 4 : 5.5,
+    color: "#15171c",
+    weight: 2,
     fillColor: typeColors[cp.type] || "#94a3b8",
     fillOpacity: isMinor ? 0.65 : 0.95
   }).addTo(map);
@@ -756,13 +698,7 @@ const cursorMarker = L.circleMarker([track[0][0], track[0][1]], {
 let computedRows = [];
 
 function formatClock(ms) {
-  const d = new Date(ms);
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  const isNight = d.getHours() >= 18 || d.getHours() < 6;
-  return `${m}/${day} ${hh}:${mm} ${isNight ? "🌙" : "☀️"}`;
+  return formatClockPlain(ms);
 }
 
 function formatClockPlain(ms) {
@@ -856,7 +792,7 @@ function renderTable() {
     const segText = idx === 0 ? "起點" : `${r.segDist.toFixed(1)}k / +${r.segGain.toFixed(0)}m`;
     tr.dataset.staticSeg = segText;
     tr.innerHTML = `
-      <td style="color:var(--accent);"><strong>${r.dist.toFixed(1)}k</strong></td>
+      <td style="color:var(--text);"><strong>${r.dist.toFixed(1)}</strong></td>
       <td style="text-align:left;"><strong>${r.name}</strong></td>
       <td>${formatClock(r.arrMs)}</td>
       <td class="t-seg" style="color:var(--muted);">${segText}</td>
@@ -876,7 +812,7 @@ function renderTable() {
     card.dataset.staticSeg = segInfo;
     card.innerHTML = `
       <div class="m-row1">
-        <span class="m-km">${r.dist.toFixed(1)}k</span>
+        <span class="m-km">${r.dist.toFixed(1)}</span>
         <span class="m-name">${r.name}</span>
         <span class="m-time">${formatClock(r.arrMs)}</span>
       </div>
@@ -931,35 +867,18 @@ function estimateMsAtDist(dKm) {
 
 function updateHUD(dKm) {
   const pt = interpolateAtDist(dKm);
-  const pBefore = interpolateAtDist(Math.max(0, dKm - 0.5));
-  const pAfter = interpolateAtDist(Math.min(MAX_DIST, dKm + 0.5));
-  const dxM = (pAfter[3] - pBefore[3]) * 1000;
-  const grade = dxM > 10 ? ((pAfter[2] - pBefore[2]) / dxM) * 100 : 0;
-
-  document.getElementById("hudDist").textContent = `${dKm.toFixed(1)} km`;
-  document.getElementById("hudEle").textContent = `${pt[2].toFixed(0)} m`;
-  document.getElementById("hudGain").textContent = `+${pt[4].toFixed(0)} m`;
-  document.getElementById("hudGrade").textContent = `${grade >= 0 ? "+" : ""}${grade.toFixed(1)}%`;
-  document.getElementById("hudTime").textContent = formatClock(estimateMsAtDist(dKm));
 
   let nextCp = checkpoints[checkpoints.length - 1];
-  let nextRow = computedRows[computedRows.length - 1];
   let nextIdx = checkpoints.length - 1;
   for (let i = 0; i < checkpoints.length; i++) {
     if (checkpoints[i].dist >= dKm - 0.05) {
       nextCp = checkpoints[i];
-      nextRow = computedRows[i] || nextCp;
       nextIdx = i;
       break;
     }
   }
   const remKm = Math.max(0, nextCp.dist - dKm);
   const remGain = Math.max(0, nextCp.gain - pt[4]);
-  const shortNext = nextCp.name.replace(/ \(.*\)/, "");
-  document.getElementById("hudNextLabel").textContent = `下一站：${shortNext}`;
-  document.getElementById("hudNear").innerHTML = remKm < 0.1
-    ? `<span style="color:#4ade80;">已抵達 ${shortNext}</span>`
-    : `<span style="color:var(--accent);">剩 ${remKm.toFixed(1)} km</span> <span style="color:var(--muted);font-weight:400;">/</span> <span style="color:var(--amber);">+${remGain.toFixed(0)} m</span>`;
 
   const mCards = document.querySelectorAll("#mobileCards .m-card");
   const tRows = document.querySelectorAll("#planBody tr");
@@ -970,8 +889,8 @@ function updateHUD(dKm) {
     if (segEl) {
       segEl.innerHTML = isNext
         ? (remKm < 0.1
-            ? `<strong style="color:#4ade80;">已抵達</strong>`
-            : `<strong style="color:var(--accent);">剩 ${remKm.toFixed(1)}k</strong> / <strong style="color:var(--amber);">+${remGain.toFixed(0)}m</strong>`)
+            ? `<strong style="color:var(--accent);">已抵達</strong>`
+            : `<strong style="color:var(--accent);">剩 ${remKm.toFixed(1)}k</strong> <span style="color:var(--muted);">/</span> <strong style="color:var(--text);">+${remGain.toFixed(0)}m</strong>`)
         : el.dataset.staticSeg;
     }
   });
@@ -982,8 +901,8 @@ function updateHUD(dKm) {
     if (segEl) {
       segEl.innerHTML = isNext
         ? (remKm < 0.1
-            ? `<strong style="color:#4ade80;">已抵達</strong>`
-            : `<strong style="color:var(--accent);">剩 ${remKm.toFixed(1)} km</strong> / <strong style="color:var(--amber);">+${remGain.toFixed(0)} m</strong>`)
+            ? `<strong style="color:var(--accent);">已抵達</strong>`
+            : `<strong style="color:var(--accent);">剩 ${remKm.toFixed(1)} km</strong> <span style="color:var(--muted);">/</span> <strong style="color:var(--text);">+${remGain.toFixed(0)} m</strong>`)
         : el.dataset.staticSeg;
     }
   });
@@ -1040,8 +959,8 @@ function drawElevation() {
   ctx.lineTo(xOf(track[track.length - 1][3]), yOf(0));
   ctx.closePath();
   const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
-  grad.addColorStop(0, "rgba(56, 189, 248, 0.45)");
-  grad.addColorStop(1, "rgba(56, 189, 248, 0.05)");
+  grad.addColorStop(0, "rgba(236, 148, 48, 0.36)");
+  grad.addColorStop(1, "rgba(236, 148, 48, 0.03)");
   ctx.fillStyle = grad;
   ctx.fill();
 
@@ -1050,22 +969,22 @@ function drawElevation() {
     if (i === 0) ctx.moveTo(xOf(p[3]), yOf(p[2]));
     else ctx.lineTo(xOf(p[3]), yOf(p[2]));
   });
-  ctx.strokeStyle = "#38bdf8";
+  ctx.strokeStyle = "#ec9430";
   ctx.lineWidth = 2;
   ctx.stroke();
 
   checkpoints.forEach(cp => {
     if (cp.type === "peak" || cp.type === "valley") return;
     const x = xOf(cp.dist);
-    ctx.strokeStyle = typeColors[cp.type] || "#94a3b8";
+    ctx.strokeStyle = "rgba(139, 146, 160, 0.22)";
     ctx.setLineDash([3, 3]);
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = typeColors[cp.type] || "#e2e8f0";
+    ctx.fillStyle = "#f5f6f8";
     ctx.beginPath();
-    ctx.arc(x, yOf(cp.ele), 3.5, 0, Math.PI * 2);
+    ctx.arc(x, yOf(cp.ele), 3, 0, Math.PI * 2);
     ctx.fill();
   });
 
@@ -1088,6 +1007,28 @@ function drawElevation() {
   ctx.strokeStyle = "#ffffff";
   ctx.lineWidth = 1.5;
   ctx.stroke();
+
+  if (w > 480) {
+    const pB = interpolateAtDist(Math.max(0, currentDist - 0.5));
+    const pA = interpolateAtDist(Math.min(MAX_DIST, currentDist + 0.5));
+    const dx = (pA[3] - pB[3]) * 1000;
+    const gr = dx > 10 ? ((pA[2] - pB[2]) / dx) * 100 : 0;
+    const hudText = `${currentDist.toFixed(1)} km  ·  ${pt[2].toFixed(0)} m  ·  +${pt[4].toFixed(0)} m  ·  ${gr >= 0 ? "+" : ""}${gr.toFixed(1)}%  ·  ${formatClockShort(estimateMsAtDist(currentDist))}`;
+    ctx.font = "600 11.5px -apple-system, BlinkMacSystemFont, sans-serif";
+    const tw = ctx.measureText(hudText).width;
+    const boxW = tw + 16, boxH = 22;
+    const bx = w - padR - boxW, by = padT - 2;
+    ctx.fillStyle = "rgba(21, 23, 28, 0.86)";
+    ctx.beginPath();
+    ctx.roundRect(bx, by, boxW, boxH, 6);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(236, 148, 48, 0.45)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#f5f6f8";
+    ctx.textAlign = "right";
+    ctx.fillText(hudText, w - padR - 8, by + 15);
+  }
 }
 
 const canvasBox = document.getElementById("canvasBox");
