@@ -338,13 +338,13 @@
     }
     @media (max-width: 768px) {
       body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-      header { padding: 8px 12px; gap: 6px; flex-shrink: 0; }
-      header h1 { font-size: 1.02rem; }
-      .sub-badge { font-size: 0.76rem; }
-      .header-actions { width: 100%; justify-content: space-between; gap: 8px; }
+      header { padding: 7px 10px; gap: 6px; flex-shrink: 0; flex-wrap: nowrap; }
+      header h1 { font-size: 0.96rem; white-space: nowrap; }
+      .hide-m, .sub-badge { display: none; }
+      .header-actions { width: auto; flex: 1; justify-content: flex-end; gap: 6px; flex-wrap: nowrap !important; }
       .top-kpis { width: auto; display: flex; }
-      .kpi { font-size: 0.82rem; padding: 4px 8px; }
-      .kpi strong { font-size: 0.92rem; }
+      .kpi { font-size: 0.82rem; padding: 4px 7px; white-space: nowrap; }
+      .kpi strong { font-size: 0.86rem; }
       .container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 6px 8px 8px; gap: 6px; }
       .card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
       #map { flex: 1; height: 100% !important; min-height: 0; }
@@ -404,17 +404,17 @@
 <body>
 <header>
   <div>
-    <h1>超極騎士 — 中部秘境 500K 互動路線與配速規劃</h1>
+    <h1><span class="hide-m">超極騎士 — </span>中部<span class="hide-m">秘境 </span>500K<span class="hide-m"> 互動路線與配速規劃</span></h1>
     <div class="sub-badge">2027/01/01 06:00 出發｜<span id="presetSummary">總計 --h（純騎 --h ＋ 總休 --h）</span></div>
   </div>
   <div class="header-actions" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
-    <div style="display:flex;align-items:center;gap:6px;">
+    <div style="display:flex;align-items:center;gap:4px;">
       <button type="button" class="preset-btn" data-preset="26H">26H</button>
       <button type="button" class="preset-btn" data-preset="28H">28H</button>
       <button type="button" class="preset-btn active" data-preset="32H">32H</button>
     </div>
     <div class="top-kpis">
-      <div class="kpi ok" id="kpiFinish">預估完賽 <strong>--</strong></div>
+      <div class="kpi ok" id="kpiFinish"><span class="hide-m">預估完賽 </span><strong>--</strong></div>
     </div>
   </div>
 </header>
