@@ -559,7 +559,7 @@ const PRESETS = {
 };
 
 // --- Map Setup ---
-const map = L.map("map", { zoomControl: false });
+const map = L.map("map", { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.5 });
 const nlscMap = L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", {
   attribution: "&copy; 國土測繪中心 NLSC",
   maxZoom: 19
@@ -589,7 +589,10 @@ L.control.layers({
 
 const latlngs = track.map(p => [p[0], p[1]]);
 const routeLine = L.polyline(latlngs, { color: "#38bdf8", weight: 4, opacity: 0.85 }).addTo(map);
-map.fitBounds(routeLine.getBounds(), { padding: [24, 24] });
+function fitRouteBounds() {
+  map.fitBounds(routeLine.getBounds(), { padding: [8, 8] });
+}
+fitRouteBounds();
 
 const MapToolsControl = L.Control.extend({
   options: { position: "bottomleft" },
@@ -609,9 +612,7 @@ const MapToolsControl = L.Control.extend({
 });
 new MapToolsControl().addTo(map);
 
-document.getElementById("resetZoomBtn").addEventListener("click", () => {
-  map.fitBounds(routeLine.getBounds(), { padding: [24, 24] });
-});
+document.getElementById("resetZoomBtn").addEventListener("click", fitRouteBounds);
 
 const typeColors = {
   start: "#f59e0b",
@@ -1174,7 +1175,7 @@ window.addEventListener("resize", () => {
   drawElevation();
 });
 recalcPlan();
-setTimeout(() => { map.invalidateSize(); drawElevation(); }, 100);
+setTimeout(() => { map.invalidateSize(); fitRouteBounds(); drawElevation(); }, 100);
 </script>
 </body>
 </html>
