@@ -1064,20 +1064,29 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-document.getElementById("gpsBtn").addEventListener("click", () => {
+function isDuringEvent() {
+  const nowMs = Date.now();
+  return nowMs >= START_MS - 3600000 && nowMs <= CUTOFF_34_MS + 14400000;
+}
+
+function stopGpsTracking() {
   const btn = document.getElementById("gpsBtn");
   if (gpsWatchId !== null) {
     navigator.geolocation.clearWatch(gpsWatchId);
     gpsWatchId = null;
-    if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
-    if (gpsCircle) { map.removeLayer(gpsCircle); gpsCircle = null; }
-    btn.classList.remove("active");
-    return;
   }
+  if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
+  if (gpsCircle) { map.removeLayer(gpsCircle); gpsCircle = null; }
+  btn.classList.remove("active");
+}
+
+function startGpsTracking(autoStart = false) {
+  const btn = document.getElementById("gpsBtn");
   if (!navigator.geolocation) {
-    alert("此瀏覽器不支援 GPS 定位");
+    if (!autoStart) alert("此瀏覽器不支援 GPS 定位");
     return;
   }
+  if (gpsWatchId !== null) return;
   gpsFirstFix = true;
   gpsWatchId = navigator.geolocation.watchPosition(
     (pos) => {
@@ -1107,41 +1116,57 @@ document.getElementById("gpsBtn").addEventListener("click", () => {
       if (gpsFirstFix) {
         gpsFirstFix = false;
         map.setView([latitude, longitude], 13);
-        let bestD = Infinity, bestKm = 0;
-        const distsToGps = new Array(track.length);
-        for (let i = 0; i < track.length; i++) {
-          const d = haversineKm(latitude, longitude, track[i][0], track[i][1]);
-          distsToGps[i] = d;
-          if (d < bestD) { bestD = d; bestKm = track[i][3]; }
-        }
-        if (bestD < 15) {
-          const nowMs = Date.now();
-          const inEvent = nowMs >= START_MS - 3600000 && nowMs <= CUTOFF_34_MS + 14400000;
-          if (inEvent) {
-            const thresh = Math.max(0.5, bestD + 0.3);
-            let bestTimeDiff = Infinity;
-            for (let i = 0; i < track.length; i++) {
-              if (distsToGps[i] <= thresh) {
-                const tDiff = Math.abs(estimateMsAtDist(track[i][3]) - nowMs);
-                if (tDiff < bestTimeDiff) {
-                  bestTimeDiff = tDiff;
-                  bestKm = track[i][3];
-                }
+      }
+
+      let bestD = Infinity, bestKm = 0;
+      const distsToGps = new Array(track.length);
+      for (let i = 0; i < track.length; i++) {
+        const d = haversineKm(latitude, longitude, track[i][0], track[i][1]);
+        distsToGps[i] = d;
+        if (d < bestD) { bestD = d; bestKm = track[i][3]; }
+      }
+      if (bestD < 15) {
+        const nowMs = Date.now();
+        if (isDuringEvent()) {
+          const thresh = Math.max(0.5, bestD + 0.3);
+          let bestTimeDiff = Infinity;
+          for (let i = 0; i < track.length; i++) {
+            if (distsToGps[i] <= thresh) {
+              const tDiff = Math.abs(estimateMsAtDist(track[i][3]) - nowMs);
+              if (tDiff < bestTimeDiff) {
+                bestTimeDiff = tDiff;
+                bestKm = track[i][3];
               }
             }
           }
-          setCursorDist(bestKm, false);
         }
+        setCursorDist(bestKm, false);
       }
     },
     (err) => {
-      alert("無法取得位置（請確認使用 HTTPS 網址並允許定位權限）：" + err.message);
-      navigator.geolocation.clearWatch(gpsWatchId);
-      gpsWatchId = null;
-      btn.classList.remove("active");
+      if (!autoStart) {
+        alert("無法取得位置（請確認使用 HTTPS 網址並允許定位權限）：" + err.message);
+      }
+      stopGpsTracking();
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
+}
+
+document.getElementById("gpsBtn").addEventListener("click", () => {
+  if (gpsWatchId !== null) stopGpsTracking();
+  else startGpsTracking(false);
+});
+
+if (isDuringEvent() && (location.protocol === "https:" || location.hostname === "localhost")) {
+  startGpsTracking(true);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && isDuringEvent() && gpsWatchId === null &&
+      (location.protocol === "https:" || location.hostname === "localhost")) {
+    startGpsTracking(true);
+  }
 });
 
 window.addEventListener("resize", () => {
