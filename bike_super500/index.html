@@ -1016,7 +1016,7 @@ function drawElevation() {
   canvas.height = h * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const padL = 46, padR = 14, padT = 18, padB = 26;
+  const padL = 26, padR = 10, padT = 8, padB = 15;
   const plotW = w - padL - padR;
   const plotH = h - padT - padB;
   const xOf = d => padL + (d / MAX_DIST) * plotW;
@@ -1026,12 +1026,12 @@ function drawElevation() {
 
   ctx.strokeStyle = "rgba(148,163,184,0.16)";
   ctx.fillStyle = "#94a3b8";
-  ctx.font = "11px sans-serif";
+  ctx.font = "9.5px sans-serif";
   ctx.textAlign = "right";
   [0, 500, 1000, 1500, 2000].forEach(ele => {
     const y = yOf(ele);
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
-    ctx.fillText(ele + "m", padL - 6, y + 4);
+    ctx.fillText(ele === 0 ? "0" : (ele / 1000) + "k", padL - 4, y + 3);
   });
 
   ctx.beginPath();
@@ -1070,9 +1070,10 @@ function drawElevation() {
   });
 
   ctx.fillStyle = "#94a3b8";
+  ctx.font = "9.5px sans-serif";
   ctx.textAlign = "center";
   [0, 100, 200, 300, 400, 500].forEach(km => {
-    ctx.fillText(km + "km", xOf(km), h - 6);
+    ctx.fillText(km === 0 ? "0" : km + "k", xOf(km), h - 3);
   });
 
   const cx = xOf(currentDist);
@@ -1092,7 +1093,7 @@ function drawElevation() {
 const canvasBox = document.getElementById("canvasBox");
 canvasBox.addEventListener("mousemove", (e) => {
   const rect = canvasBox.getBoundingClientRect();
-  const padL = 46, padR = 14;
+  const padL = 26, padR = 10;
   const plotW = rect.width - padL - padR;
   const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left - padL) / plotW));
   setCursorDist(ratio * MAX_DIST, false);
