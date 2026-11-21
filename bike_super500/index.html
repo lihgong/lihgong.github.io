@@ -355,21 +355,7 @@
       .preset-bar { padding: 8px 10px; gap: 6px; }
       .preset-btn { flex: 1; padding: 6px 6px; font-size: 0.85rem; text-align: center; }
       #presetSummary { width: 100%; margin-left: 0 !important; font-size: 0.82rem; }
-      #toggleCtrlBtn {
-        display: block;
-        width: 100%;
-        padding: 8px 12px;
-        background: var(--panel2);
-        border: none;
-        border-bottom: 1px solid var(--border);
-        border-radius: 0;
-        text-align: left;
-        color: var(--accent);
-        font-weight: 600;
-        font-size: 0.9rem;
-      }
-      .controls { display: none; padding: 10px; }
-      .controls.m-open { display: flex; }
+      .controls { padding: 10px; display: flex !important; }
       .table-wrap { display: none; }
       #mobileCards { display: block; }
     }
@@ -420,13 +406,18 @@
 <header>
   <div>
     <h1>超極騎士 — 中部秘境 500K 互動路線與配速規劃</h1>
-    <div class="sub-badge">34H 挑戰組（2027/01/01 06:00 出發｜官方 CP1~CP13 檢錄與關門時間）</div>
+    <div class="sub-badge">2027/01/01 06:00 出發｜<span id="presetSummary">總計 --h（純騎 --h ＋ 總休 --h）</span></div>
   </div>
-  <div class="top-kpis">
-    <div class="kpi">總里程 <strong>501.4 km</strong></div>
-    <div class="kpi">清洗後總爬升 <strong>+9,243 m</strong></div>
-    <div class="kpi ok" id="kpiFinish">預估完賽 <strong>--</strong></div>
-    <div class="kpi warn" id="kpiBuffer">34H 關門餘裕 <strong>--</strong></div>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" class="preset-btn" data-preset="26H">26H</button>
+      <button type="button" class="preset-btn" data-preset="28H">28H</button>
+      <button type="button" class="preset-btn active" data-preset="32H">32H</button>
+    </div>
+    <div class="top-kpis">
+      <div class="kpi ok" id="kpiFinish">預估完賽 <strong>--</strong></div>
+      <div class="kpi warn" id="kpiBuffer">34H 關門餘裕 <strong>--</strong></div>
+    </div>
   </div>
 </header>
 
@@ -445,6 +436,7 @@
         <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
           <input type="checkbox" id="showLabels" /> 顯示站點名稱
         </label>
+        <button id="gpsBtn" type="button">📍 我的位置</button>
         <button id="resetZoomBtn">顯示全路線</button>
       </div>
     </div>
@@ -467,7 +459,7 @@
         <div class="hud-val amber" id="hudGain">0 m</div>
       </div>
       <div class="hud-box hud-hide-m">
-        <div class="hud-label">前後 1km 平均坡度</div>
+        <div class="hud-label">平均坡度</div>
         <div class="hud-val" id="hudGrade">0.0%</div>
       </div>
       <div class="hud-box">
@@ -476,7 +468,7 @@
       </div>
       <div class="hud-box hud-hide-m">
         <div class="hud-label">最近檢查點 / 補給站</div>
-        <div class="hud-val" id="hudNear" style="font-size:1.05rem;">起點 豬事圓滿公園</div>
+        <div class="hud-val" id="hudNear" style="font-size:1.05rem;">豬事圓滿公園</div>
       </div>
     </div>
     <div class="canvas-box" id="canvasBox" title="滑鼠左右移動瀏覽，或使用滾輪微調里程（按住 Shift 滾輪可快轉 ±10km）">
@@ -492,39 +484,9 @@
 
   <!-- Pacing & Supply Table Card -->
   <div class="card">
-    <div class="preset-bar">
-      <span style="color:var(--muted);font-weight:600;">完賽目標檔位：</span>
-      <button type="button" class="preset-btn" data-preset="26H">26H</button>
-      <button type="button" class="preset-btn" data-preset="28H">28H</button>
-      <button type="button" class="preset-btn active" data-preset="32H">32H</button>
-      <span id="presetSummary" style="margin-left:auto;color:var(--muted);font-size:0.88rem;">純騎 --h ｜ 總休 --h</span>
-    </div>
-    <button type="button" id="toggleCtrlBtn">⚙️ 進階配速設定與匯出（點擊展開）</button>
     <div class="controls" id="ctrlPanel">
-      <div class="ctrl-group">
-        <label>配速模型：
-          <select id="modelSelect">
-            <option value="A">模型 A：坡度線性降速模型</option>
-            <option value="B">模型 B：VAM 爬升速率模型</option>
-          </select>
-        </label>
-        <label>平路/下坡上限 (km/h)：
-          <input type="number" id="flatSpeed" value="24.9" step="0.5" min="15" max="35" style="width:68px" />
-        </label>
-        <label id="slopeKWrap">每1%坡度降速：
-          <input type="number" id="slopeKInput" value="2.79" step="0.05" min="0.5" max="6" style="width:72px" />
-        </label>
-        <label id="vamWrap" style="display:none;">爬坡 VAM (m/h)：
-          <input type="number" id="vamInput" value="600" step="20" min="300" max="1200" style="width:72px" />
-        </label>
-        <label>後段疲勞係數：
-          <select id="fatigueSelect">
-            <option value="1.0">無衰減 (100%)</option>
-            <option value="0.92">300K 後微降速 (92%)</option>
-            <option value="0.90">300K 後穩健降速 (90%)</option>
-            <option value="0.85" selected>300K 後保守降速 (85%)</option>
-          </select>
-        </label>
+      <div class="ctrl-group" style="color:var(--muted);font-size:0.88rem;">
+        <span>點選上方 26H / 28H / 32H 切換參考配速，或直接修改各站「休息(分)」與「備註」</span>
       </div>
       <div class="ctrl-group">
         <button id="exportCsvBtn">匯出 CSV (試算表用)</button>
@@ -606,14 +568,12 @@ const START_MS = new Date("2027-01-01T06:00:00+08:00").getTime();
 const CUTOFF_28_MS = new Date("2027-01-02T10:00:00+08:00").getTime();
 const CUTOFF_34_MS = new Date("2027-01-02T16:00:00+08:00").getTime();
 
-let currentSlopeK = 2.79;
-let activeCutoffMs = CUTOFF_34_MS;
-let activeCutoffLabel = "34H 關門餘裕";
+let activePreset = { flat: 24.9, slopeK: 2.79, fatigue: 0.85, cutoffMs: CUTOFF_34_MS, cutoffLabel: "34H 關門餘裕" };
 
 const PRESETS = {
-  "26H": { flat: 27.5, slopeK: 2.55, fatigue: "0.92", restNorm: 6, restMid: 15, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
-  "28H": { flat: 26.0, slopeK: 2.65, fatigue: "0.90", restNorm: 8, restMid: 20, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
-  "32H": { flat: 24.9, slopeK: 2.79, fatigue: "0.85", restNorm: 10, restMid: 30, cutoffMs: CUTOFF_34_MS, cutoffLabel: "34H 關門餘裕" }
+  "26H": { flat: 27.5, slopeK: 2.55, fatigue: 0.92, restNorm: 6, restMid: 15, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
+  "28H": { flat: 26.0, slopeK: 2.65, fatigue: 0.90, restNorm: 8, restMid: 20, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
+  "32H": { flat: 24.9, slopeK: 2.79, fatigue: 0.85, restNorm: 10, restMid: 30, cutoffMs: CUTOFF_34_MS, cutoffLabel: "34H 關門餘裕" }
 };
 
 // --- Map Setup ---
@@ -747,11 +707,9 @@ function formatDuration(h) {
 }
 
 function recalcPlan() {
-  const model = document.getElementById("modelSelect").value;
-  const flatCap = parseFloat(document.getElementById("flatSpeed").value) || 24.9;
-  const slopeK = parseFloat(document.getElementById("slopeKInput").value) || 2.79;
-  const vam = parseFloat(document.getElementById("vamInput").value) || 600;
-  const fatigue = parseFloat(document.getElementById("fatigueSelect").value) || 1.0;
+  const flatCap = activePreset.flat;
+  const slopeK = activePreset.slopeK;
+  const fatigue = activePreset.fatigue;
 
   let cumHours = 0;
   let lastMealRideH = 0;
@@ -769,16 +727,7 @@ function recalcPlan() {
     const segGain = +(cp.gain - prev.gain).toFixed(1);
     const grade = segDist > 0 ? (segGain / (segDist * 1000)) * 100 : 0;
 
-    let speed;
-    if (model === "A") {
-      speed = Math.max(5.0, Math.min(flatCap, flatCap - slopeK * grade));
-    } else {
-      const tFlat = segDist / flatCap;
-      const tClimb = segGain / vam;
-      const tSeg = Math.max(tFlat, tClimb);
-      speed = tSeg > 0 ? segDist / tSeg : flatCap;
-    }
-
+    let speed = Math.max(5.0, Math.min(flatCap, flatCap - slopeK * grade));
     if (cp.dist > 300) {
       speed = speed * fatigue;
     }
@@ -801,10 +750,10 @@ function recalcPlan() {
   });
 
   const last = computedRows[computedRows.length - 1];
-  const bufH = (activeCutoffMs - last.arrMs) / 3600000;
-  document.querySelector("#kpiFinish strong").textContent = formatClock(last.arrMs);
+  const bufH = (activePreset.cutoffMs - last.arrMs) / 3600000;
+  document.querySelector("#kpiFinish strong").textContent = formatClockPlain(last.arrMs);
   const kpiBuf = document.getElementById("kpiBuffer");
-  kpiBuf.innerHTML = `${activeCutoffLabel} <strong>${(bufH >= 0 ? "+" : "") + bufH.toFixed(1)} 小時</strong>`;
+  kpiBuf.innerHTML = `${activePreset.cutoffLabel} <strong>${(bufH >= 0 ? "+" : "") + bufH.toFixed(1)} 小時</strong>`;
   kpiBuf.className = "kpi " + (bufH >= 1 ? "ok" : bufH >= 0 ? "warn" : "danger");
   document.getElementById("presetSummary").textContent =
     `總計 ${last.arrHours.toFixed(1)}h（純騎 ${cumRideH.toFixed(1)}h ＋ 總休 ${(cumRestMin / 60).toFixed(1)}h）`;
@@ -1062,18 +1011,6 @@ document.getElementById("distSlider").addEventListener("input", (e) => {
   setCursorDist(parseFloat(e.target.value), false);
 });
 
-document.getElementById("modelSelect").addEventListener("change", (e) => {
-  const isB = e.target.value === "B";
-  document.getElementById("vamWrap").style.display = isB ? "inline-flex" : "none";
-  document.getElementById("slopeKWrap").style.display = isB ? "none" : "inline-flex";
-  document.getElementById("flatSpeed").value = isB ? "22.0" : "24.9";
-  recalcPlan();
-});
-document.getElementById("flatSpeed").addEventListener("change", recalcPlan);
-document.getElementById("slopeKInput").addEventListener("change", recalcPlan);
-document.getElementById("vamInput").addEventListener("change", recalcPlan);
-document.getElementById("fatigueSelect").addEventListener("change", recalcPlan);
-
 document.getElementById("exportCsvBtn").addEventListener("click", () => {
   const headers = ["地點","類型","海拔(m)","累計里程(km)","累計爬升(m)","間距(km)","區間爬升(m)","坡度%","休息(分)","段均速(km/h)","預計抵達","官方關門","備註"];
   const lines = [headers.join(",")];
@@ -1120,15 +1057,7 @@ document.querySelectorAll(".preset-btn").forEach(btn => {
     document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
 
-    document.getElementById("modelSelect").value = "A";
-    document.getElementById("vamWrap").style.display = "none";
-    document.getElementById("slopeKWrap").style.display = "inline-flex";
-    document.getElementById("flatSpeed").value = p.flat;
-    document.getElementById("slopeKInput").value = p.slopeK;
-    document.getElementById("fatigueSelect").value = p.fatigue;
-    activeCutoffMs = p.cutoffMs;
-    activeCutoffLabel = p.cutoffLabel;
-
+    activePreset = p;
     checkpoints.forEach((cp, idx) => {
       if (idx === 0 || idx === checkpoints.length - 1) cp.rest = 0;
       else if (cp.type === "midpoint") cp.rest = p.restMid;
@@ -1138,12 +1067,84 @@ document.querySelectorAll(".preset-btn").forEach(btn => {
   });
 });
 
-document.getElementById("toggleCtrlBtn").addEventListener("click", () => {
-  const panel = document.getElementById("ctrlPanel");
-  const open = panel.classList.toggle("m-open");
-  document.getElementById("toggleCtrlBtn").textContent = open
-    ? "⚙️ 收合進階配速設定與匯出"
-    : "⚙️ 進階配速設定與匯出（點擊展開）";
+// --- Mobile GPS Live Location ---
+let gpsWatchId = null;
+let gpsMarker = null;
+let gpsCircle = null;
+let gpsFirstFix = true;
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+document.getElementById("gpsBtn").addEventListener("click", () => {
+  const btn = document.getElementById("gpsBtn");
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+    if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
+    if (gpsCircle) { map.removeLayer(gpsCircle); gpsCircle = null; }
+    btn.textContent = "📍 我的位置";
+    btn.classList.remove("primary");
+    return;
+  }
+  if (!navigator.geolocation) {
+    alert("此瀏覽器不支援 GPS 定位");
+    return;
+  }
+  btn.textContent = "📍 定位中...";
+  gpsFirstFix = true;
+  gpsWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      btn.textContent = "📍 定位中 (點擊關閉)";
+      btn.classList.add("primary");
+
+      if (!gpsMarker) {
+        gpsCircle = L.circle([latitude, longitude], {
+          radius: accuracy,
+          color: "#38bdf8",
+          fillColor: "#38bdf8",
+          fillOpacity: 0.15,
+          weight: 1
+        }).addTo(map);
+        gpsMarker = L.circleMarker([latitude, longitude], {
+          radius: 8,
+          color: "#ffffff",
+          weight: 2.5,
+          fillColor: "#2563eb",
+          fillOpacity: 1
+        }).addTo(map).bindTooltip("我目前的位置", { direction: "top" });
+      } else {
+        gpsMarker.setLatLng([latitude, longitude]);
+        gpsCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+      }
+
+      if (gpsFirstFix) {
+        gpsFirstFix = false;
+        map.setView([latitude, longitude], 13);
+        let bestD = Infinity, bestKm = 0;
+        for (let i = 0; i < track.length; i++) {
+          const d = haversineKm(latitude, longitude, track[i][0], track[i][1]);
+          if (d < bestD) { bestD = d; bestKm = track[i][3]; }
+        }
+        if (bestD < 15) setCursorDist(bestKm, false);
+      }
+    },
+    (err) => {
+      alert("無法取得位置（請確認使用 HTTPS 網址並允許定位權限）：" + err.message);
+      navigator.geolocation.clearWatch(gpsWatchId);
+      gpsWatchId = null;
+      btn.textContent = "📍 我的位置";
+      btn.classList.remove("primary");
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  );
 });
 
 window.addEventListener("resize", drawElevation);
