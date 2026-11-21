@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="theme-color" content="#0f172a" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>超極騎士 中部秘境 500K — 路線與配速規劃</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -644,15 +645,17 @@ const PRESETS = {
 };
 
 // --- Map Setup ---
-const map = L.map("map", { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.5 });
+const map = L.map("map", { zoomControl: false, zoomSnap: 1 });
 const nlscMap = L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", {
   attribution: "&copy; 國土測繪中心 NLSC",
-  maxZoom: 19
+  maxZoom: 19,
+  detectRetina: true
 }).addTo(map);
 
 const nlscPhoto = L.tileLayer("https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}", {
   attribution: "&copy; 國土測繪中心 NLSC 正射影像",
-  maxZoom: 19
+  maxZoom: 19,
+  detectRetina: true
 });
 
 const esriStreet = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
@@ -675,7 +678,7 @@ L.control.layers({
 const latlngs = track.map(p => [p[0], p[1]]);
 const routeLine = L.polyline(latlngs, { color: "#38bdf8", weight: 4, opacity: 0.85 }).addTo(map);
 function fitRouteBounds() {
-  map.fitBounds(routeLine.getBounds(), { padding: [8, 8] });
+  map.fitBounds(routeLine.getBounds(), { padding: [4, 4] });
 }
 fitRouteBounds();
 
