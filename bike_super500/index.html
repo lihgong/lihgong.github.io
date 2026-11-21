@@ -495,10 +495,12 @@
       <button type="button" class="preset-btn" data-preset="26H">26H</button>
       <button type="button" class="preset-btn" data-preset="28H">28H</button>
       <button type="button" class="preset-btn active" data-preset="32H">32H</button>
+      <button type="button" class="preset-btn" id="customPresetBtn" data-preset="CUSTOM" style="display:none;">自訂</button>
     </div>
     <div class="top-kpis">
       <div class="kpi ok" id="kpiFinish"><span class="hide-m">預估完賽 </span><strong>--</strong></div>
     </div>
+    <button type="button" class="header-tool-btn hide-m" id="customPlanBtn">自訂配速</button>
     <button type="button" class="header-tool-btn hide-m" id="exportCsvBtn">匯出 CSV</button>
     <button type="button" class="header-tool-btn primary hide-m" id="stickerBtn">上管貼</button>
   </div>
@@ -539,6 +541,41 @@
       </table>
     </div>
     <div id="mobileCards"></div>
+  </div>
+</div>
+
+<!-- Custom Plan Modal -->
+<div class="modal-backdrop" id="customModal">
+  <div class="modal" style="max-width:780px;">
+    <div class="modal-head" style="flex-wrap:wrap;gap:8px;">
+      <strong>自訂各站配速與休息（自動儲存於本機）</strong>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <input type="file" id="importCsvFile" accept=".csv,.txt" hidden />
+        <button id="importCsvBtn" type="button">匯入 CSV</button>
+        <button id="copyShareLinkBtn" type="button">複製分享連結</button>
+        <button id="clearCustomBtn" type="button">清除自訂</button>
+        <button id="applyCustomBtn" type="button" class="primary">套用</button>
+        <button id="closeCustomBtn" type="button">關閉</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="customPreviewSummary" style="font-size:0.86rem;color:var(--text);margin-bottom:10px;padding:6px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;"></div>
+      <div class="table-wrap" style="max-height:55vh;">
+        <table style="font-size:0.84rem;">
+          <thead>
+            <tr>
+              <th>里程</th>
+              <th>地點</th>
+              <th>騎乘(分)</th>
+              <th>休息(分)</th>
+              <th>段均速</th>
+              <th>預計抵達</th>
+            </tr>
+          </thead>
+          <tbody id="customPlanBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -722,16 +759,23 @@ function formatDuration(h) {
   return `${hh}h${String(mm).padStart(2, "0")}m`;
 }
 
+let activePresetKey = "32H";
+let customStops = null;
+
 function recalcPlan() {
   const flatCap = activePreset.flat;
   const slopeK = activePreset.slopeK;
   const fatigue = activePreset.fatigue;
+  const useCustom = activePresetKey === "CUSTOM" && Array.isArray(customStops) && customStops.length === checkpoints.length;
 
   let cumHours = 0;
   let lastMealRideH = 0;
   let cumRideH = 0;
   let cumRestMin = 0;
   computedRows = checkpoints.map((cp, i) => {
+    if (useCustom) {
+      cp.rest = Math.max(0, Math.round(customStops[i].rest || 0));
+    }
     if (i === 0) {
       const departMs = START_MS + (cp.rest * 60000);
       cumHours += cp.rest / 60;
@@ -743,12 +787,18 @@ function recalcPlan() {
     const segGain = +(cp.gain - prev.gain).toFixed(1);
     const grade = segDist > 0 ? (segGain / (segDist * 1000)) * 100 : 0;
 
-    let speed = Math.max(5.0, Math.min(flatCap, flatCap - slopeK * grade));
-    if (cp.dist > 300) {
-      speed = speed * fatigue;
+    let speed, rideH;
+    if (useCustom) {
+      const rMin = Math.max(1, Number(customStops[i].rideMin) || 1);
+      rideH = rMin / 60;
+      speed = segDist > 0 ? segDist / rideH : 0;
+    } else {
+      speed = Math.max(5.0, Math.min(flatCap, flatCap - slopeK * grade));
+      if (cp.dist > 300) {
+        speed = speed * fatigue;
+      }
+      rideH = segDist > 0 ? segDist / speed : 0;
     }
-
-    const rideH = segDist > 0 ? segDist / speed : 0;
     cumRideH += rideH;
     const sinceMealH = cumRideH - lastMealRideH;
     if (cp.meal) {
@@ -1089,22 +1139,225 @@ document.getElementById("copyStickerBtn").addEventListener("click", () => {
   setTimeout(() => document.getElementById("copyStickerBtn").textContent = "複製文字", 1500);
 });
 
-document.querySelectorAll(".preset-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const key = btn.dataset.preset;
-    const p = PRESETS[key];
-    if (!p) return;
-    document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
+function encodePlanHash(stops) {
+  return stops.map(s => `${Math.round(s.rideMin || 0)},${Math.round(s.rest || 0)}`).join(";");
+}
 
-    activePreset = p;
-    checkpoints.forEach((cp, idx) => {
-      if (idx === 0 || idx === checkpoints.length - 1) cp.rest = 0;
-      else if (cp.type === "midpoint") cp.rest = p.restMid;
-      else cp.rest = p.restNorm;
-    });
-    recalcPlan();
+function decodePlanHash(str) {
+  if (!str) return null;
+  const parts = str.split(";");
+  if (parts.length !== checkpoints.length) return null;
+  const stops = parts.map(p => {
+    const [rStr, restStr] = p.split(",");
+    const rideMin = Number(rStr), rest = Number(restStr);
+    if (!Number.isFinite(rideMin) || !Number.isFinite(rest) || rideMin < 0 || rest < 0) return null;
+    return { rideMin: Math.round(rideMin), rest: Math.round(rest) };
   });
+  return stops.some(s => !s) ? null : stops;
+}
+
+function saveCustomPlan(stops) {
+  customStops = stops;
+  const btn = document.getElementById("customPresetBtn");
+  if (btn) btn.style.display = "";
+  try { localStorage.setItem("super500_custom_plan", JSON.stringify(stops)); } catch (e) {}
+}
+
+function applyPreset(key, save = true) {
+  if (key === "CUSTOM") {
+    if (!Array.isArray(customStops) || customStops.length !== checkpoints.length) return false;
+    activePresetKey = "CUSTOM";
+    activePreset = { ...PRESETS["32H"], cutoffMs: CUTOFF_34_MS, cutoffLabel: "34H 關門餘裕" };
+    document.querySelectorAll(".preset-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.preset === "CUSTOM");
+    });
+    if (save) {
+      try { localStorage.setItem("super500_preset", "CUSTOM"); } catch (e) {}
+    }
+    recalcPlan();
+    return true;
+  }
+  const p = PRESETS[key];
+  if (!p) return false;
+  activePresetKey = key;
+  document.querySelectorAll(".preset-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.preset === key);
+  });
+  activePreset = p;
+  checkpoints.forEach((cp, idx) => {
+    if (idx === 0 || idx === checkpoints.length - 1) cp.rest = 0;
+    else if (cp.type === "midpoint") cp.rest = p.restMid;
+    else cp.rest = p.restNorm;
+  });
+  if (save) {
+    try { localStorage.setItem("super500_preset", key); } catch (e) {}
+  }
+  recalcPlan();
+  return true;
+}
+
+document.querySelectorAll(".preset-btn").forEach(btn => {
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset, true));
+});
+
+// --- Custom Plan Modal & CSV/URL Share ---
+let draftStops = [];
+
+function renderCustomModalRows() {
+  const tbody = document.getElementById("customPlanBody");
+  tbody.innerHTML = "";
+  let cumMin = 0, cumRide = 0, cumRest = 0;
+  draftStops.forEach((st, i) => {
+    const cp = checkpoints[i];
+    const prev = i > 0 ? checkpoints[i - 1] : null;
+    const segDist = prev ? +(cp.dist - prev.dist).toFixed(2) : 0;
+    const rideMin = i === 0 ? 0 : Math.max(1, Math.round(st.rideMin || 1));
+    const rest = i === checkpoints.length - 1 ? 0 : Math.max(0, Math.round(st.rest || 0));
+    if (i > 0) { cumMin += rideMin; cumRide += rideMin; }
+    const arrMs = START_MS + cumMin * 60000;
+    if (i < checkpoints.length - 1) { cumMin += rest; cumRest += rest; }
+    const speed = (i > 0 && rideMin > 0) ? (segDist / (rideMin / 60)).toFixed(1) : "-";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${cp.dist.toFixed(1)}</td>
+      <td style="text-align:left;">${cp.name}</td>
+      <td>${i === 0 ? "-" : `<input type="number" min="1" max="1440" value="${rideMin}" data-idx="${i}" data-field="rideMin" style="width:72px;padding:3px 6px;text-align:right;">`}</td>
+      <td>${i === checkpoints.length - 1 ? "-" : `<input type="number" min="0" max="600" value="${rest}" data-idx="${i}" data-field="rest" style="width:68px;padding:3px 6px;text-align:right;">`}</td>
+      <td class="c-spd">${speed}</td>
+      <td class="c-arr">${formatClockPlain(arrMs)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const finMs = START_MS + cumMin * 60000;
+  document.getElementById("customPreviewSummary").textContent =
+    `預估完賽 ${formatClockPlain(finMs)}｜總計 ${(cumMin / 60).toFixed(1)}h（純騎 ${(cumRide / 60).toFixed(1)}h ＋ 總休 ${(cumRest / 60).toFixed(1)}h）`;
+
+  tbody.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const idx = Number(inp.dataset.idx);
+      const field = inp.dataset.field;
+      const val = Math.max(field === "rideMin" ? 1 : 0, Math.round(Number(inp.value) || 0));
+      draftStops[idx][field] = val;
+      updateCustomModalPreview();
+    });
+  });
+}
+
+function updateCustomModalPreview() {
+  const rows = document.querySelectorAll("#customPlanBody tr");
+  let cumMin = 0, cumRide = 0, cumRest = 0;
+  draftStops.forEach((st, i) => {
+    const cp = checkpoints[i];
+    const prev = i > 0 ? checkpoints[i - 1] : null;
+    const segDist = prev ? +(cp.dist - prev.dist).toFixed(2) : 0;
+    const rideMin = i === 0 ? 0 : Math.max(1, Math.round(st.rideMin || 1));
+    const rest = i === checkpoints.length - 1 ? 0 : Math.max(0, Math.round(st.rest || 0));
+    if (i > 0) { cumMin += rideMin; cumRide += rideMin; }
+    const arrMs = START_MS + cumMin * 60000;
+    if (i < checkpoints.length - 1) { cumMin += rest; cumRest += rest; }
+    const speed = (i > 0 && rideMin > 0) ? (segDist / (rideMin / 60)).toFixed(1) : "-";
+    if (rows[i]) {
+      rows[i].querySelector(".c-spd").textContent = speed;
+      rows[i].querySelector(".c-arr").textContent = formatClockPlain(arrMs);
+    }
+  });
+  const finMs = START_MS + cumMin * 60000;
+  document.getElementById("customPreviewSummary").textContent =
+    `預估完賽 ${formatClockPlain(finMs)}｜總計 ${(cumMin / 60).toFixed(1)}h（純騎 ${(cumRide / 60).toFixed(1)}h ＋ 總休 ${(cumRest / 60).toFixed(1)}h）`;
+}
+
+function parseCsvRow(line) {
+  const out = [];
+  let cur = "", inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === "," && !inQ) { out.push(cur.trim()); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+document.getElementById("customPlanBtn").addEventListener("click", () => {
+  draftStops = computedRows.map((r, i) => ({
+    rideMin: i === 0 ? 0 : Math.max(1, Math.round(r.rideH * 60)),
+    rest: i === checkpoints.length - 1 ? 0 : Math.max(0, Math.round(r.rest || 0))
+  }));
+  renderCustomModalRows();
+  document.getElementById("customModal").classList.add("open");
+});
+
+document.getElementById("closeCustomBtn").addEventListener("click", () => {
+  document.getElementById("customModal").classList.remove("open");
+});
+
+document.getElementById("applyCustomBtn").addEventListener("click", () => {
+  saveCustomPlan(draftStops.map(s => ({ rideMin: s.rideMin, rest: s.rest })));
+  applyPreset("CUSTOM", true);
+  document.getElementById("customModal").classList.remove("open");
+});
+
+document.getElementById("clearCustomBtn").addEventListener("click", () => {
+  customStops = null;
+  const btn = document.getElementById("customPresetBtn");
+  if (btn) btn.style.display = "none";
+  try { localStorage.removeItem("super500_custom_plan"); } catch (e) {}
+  if (location.hash.startsWith("#p=")) history.replaceState(null, "", location.pathname + location.search);
+  applyPreset("32H", true);
+  document.getElementById("customModal").classList.remove("open");
+});
+
+document.getElementById("copyShareLinkBtn").addEventListener("click", () => {
+  const hash = "#p=" + encodePlanHash(draftStops);
+  const url = location.origin + location.pathname + location.search + hash;
+  navigator.clipboard.writeText(url);
+  const b = document.getElementById("copyShareLinkBtn");
+  b.textContent = "已複製連結！";
+  setTimeout(() => b.textContent = "複製分享連結", 1500);
+});
+
+document.getElementById("importCsvBtn").addEventListener("click", () => {
+  document.getElementById("importCsvFile").click();
+});
+
+document.getElementById("importCsvFile").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result || "").replace(/^\uFEFF/, "");
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return;
+    const headers = parseCsvRow(lines[0]);
+    const restCol = headers.findIndex(h => h.includes("休息"));
+    const spdCol = headers.findIndex(h => h.includes("均速"));
+    const rideMinCol = headers.findIndex(h => h.includes("騎乘"));
+    const rows = lines.slice(1).map(parseCsvRow);
+    if (rows.length !== checkpoints.length) {
+      alert(`CSV 列數 (${rows.length}) 與路線站點數 (${checkpoints.length}) 不符，請先使用「匯出 CSV」作為範本編輯。`);
+      return;
+    }
+    draftStops = rows.map((cols, i) => {
+      const prev = i > 0 ? checkpoints[i - 1] : null;
+      const segDist = prev ? +(checkpoints[i].dist - prev.dist).toFixed(2) : 0;
+      const rest = restCol >= 0 ? Math.max(0, Math.round(Number(cols[restCol]) || 0)) : draftStops[i].rest;
+      let rideMin = draftStops[i].rideMin;
+      if (i > 0) {
+        if (rideMinCol >= 0 && Number(cols[rideMinCol]) > 0) {
+          rideMin = Math.max(1, Math.round(Number(cols[rideMinCol])));
+        } else if (spdCol >= 0 && Number(cols[spdCol]) > 0 && segDist > 0) {
+          rideMin = Math.max(1, Math.round((segDist / Number(cols[spdCol])) * 60));
+        }
+      }
+      return { rideMin: i === 0 ? 0 : rideMin, rest: i === checkpoints.length - 1 ? 0 : rest };
+    });
+    renderCustomModalRows();
+  };
+  reader.readAsText(file, "UTF-8");
+  e.target.value = "";
 });
 
 // --- Mobile GPS Live Location ---
@@ -1259,7 +1512,31 @@ window.addEventListener("resize", () => {
   map.invalidateSize();
   drawElevation();
 });
-recalcPlan();
+let savedPreset = null;
+try {
+  const rawCustom = localStorage.getItem("super500_custom_plan");
+  if (rawCustom) {
+    const parsed = JSON.parse(rawCustom);
+    if (Array.isArray(parsed) && parsed.length === checkpoints.length) {
+      customStops = parsed;
+      const btn = document.getElementById("customPresetBtn");
+      if (btn) btn.style.display = "";
+    }
+  }
+  savedPreset = localStorage.getItem("super500_preset");
+} catch (e) {}
+
+if (location.hash.startsWith("#p=")) {
+  const sharedStops = decodePlanHash(location.hash.slice(3));
+  if (sharedStops) {
+    saveCustomPlan(sharedStops);
+    savedPreset = "CUSTOM";
+  }
+}
+
+if (!savedPreset || !applyPreset(savedPreset, false)) {
+  recalcPlan();
+}
 setTimeout(() => { map.invalidateSize(); fitRouteBounds(); drawElevation(); }, 100);
 </script>
 </body>
