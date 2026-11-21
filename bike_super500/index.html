@@ -330,32 +330,33 @@
       border-radius: 4px;
       font-size: 0.8rem;
     }
+    .m-card.row-next .m-seg {
+      font-size: 1.08rem;
+      font-weight: 700;
+      display: inline-block;
+      margin-top: 2px;
+    }
     @media (max-width: 768px) {
-      header { padding: 10px 12px; gap: 8px; }
-      header h1 { font-size: 1.08rem; }
-      .sub-badge { font-size: 0.8rem; }
+      body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+      header { padding: 8px 12px; gap: 6px; flex-shrink: 0; }
+      header h1 { font-size: 1.02rem; }
+      .sub-badge { font-size: 0.76rem; }
       .header-actions { width: 100%; justify-content: space-between; gap: 8px; }
       .top-kpis { width: auto; display: flex; }
-      .kpi { font-size: 0.86rem; padding: 5px 10px; }
-      .kpi strong { font-size: 0.96rem; }
-      .container { padding: 10px 10px 30px; gap: 10px; }
-      #map { height: 210px; }
-      .legend { gap: 8px; }
-      .legend-item { font-size: 0.78rem; }
-      .hud { grid-template-columns: 1fr; gap: 0; margin-bottom: 6px; }
-      .hud-hide-m { display: none; }
-      .hud-next-m { grid-column: 1 / -1; }
-      .hud-box { padding: 6px 10px; }
-      .hud-label { font-size: 0.84rem; color: var(--muted); }
-      .hud-next-title { font-size: 1.06rem; font-weight: 700; color: var(--text); }
-      .hud-val { font-size: 1.08rem; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-top: 2px; }
-      .canvas-box { height: 155px; }
-      .scrubber-row { display: flex; }
+      .kpi { font-size: 0.82rem; padding: 4px 8px; }
+      .kpi strong { font-size: 0.92rem; }
+      .container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 6px 8px 8px; gap: 6px; }
+      .card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+      #map { flex: 1; height: 100% !important; min-height: 0; }
+      .elev-wrap { padding: 6px 8px; }
+      .hud { display: none; }
+      .canvas-box { flex: 1; height: auto !important; min-height: 0; }
+      .scrubber-row { display: flex; margin-top: 4px; flex-shrink: 0; }
       .scrubber-hint { display: none; }
-      .preset-btn { padding: 5px 10px; font-size: 0.86rem; text-align: center; }
+      .preset-btn { padding: 4px 10px; font-size: 0.85rem; text-align: center; }
       .controls { display: none !important; }
       .table-wrap { display: none; }
-      #mobileCards { display: block; max-height: 245px; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
+      #mobileCards { display: block; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
     }
 
     .modal-backdrop {
@@ -461,7 +462,7 @@
   </div>
 
   <!-- Pacing & Supply Table Card -->
-  <div class="card">
+  <div class="card plan-card">
     <div class="controls" id="ctrlPanel" style="justify-content:flex-end;">
       <div class="ctrl-group">
         <button id="exportCsvBtn">匯出 CSV (試算表用)</button>
@@ -760,6 +761,7 @@ function renderTable() {
       (r.type === "midpoint" ? " row-midpoint" : r.type === "cp" ? " row-cp" : "");
     const segInfo = idx === 0 ? "起點" : `${r.segDist.toFixed(1)}km / +${r.segGain.toFixed(0)}m · ${formatDuration(r.rideH)}`;
     const noteBadge = r.note ? `<span class="m-note">${r.note}</span>` : "";
+    card.dataset.staticSeg = segInfo;
     card.innerHTML = `
       <div class="m-row1">
         <span class="m-km">${r.dist.toFixed(1)}k</span>
@@ -767,7 +769,7 @@ function renderTable() {
         <span class="m-time">${formatClock(r.arrMs)}</span>
       </div>
       <div class="m-row2">
-        <span>${segInfo} ${noteBadge}</span>
+        <span><span class="m-seg">${segInfo}</span> ${noteBadge}</span>
         <span>${r.rest > 0 ? `休 ${r.rest} 分` : ""}</span>
       </div>
     `;
@@ -839,32 +841,35 @@ function updateHUD(dKm) {
       break;
     }
   }
+  const remKm = Math.max(0, nextCp.dist - dKm);
+  const remGain = Math.max(0, nextCp.gain - pt[4]);
+  const shortNext = nextCp.name.replace(/ \(.*\)/, "");
+  document.getElementById("hudNextLabel").textContent = `下一站：${shortNext}`;
+  document.getElementById("hudNear").innerHTML = remKm < 0.1
+    ? `<span style="color:#4ade80;">已抵達 ${shortNext}</span>`
+    : `<span style="color:var(--accent);">剩 ${remKm.toFixed(1)} km</span> <span style="color:var(--muted);font-weight:400;">/</span> <span style="color:var(--amber);">+${remGain.toFixed(0)} m</span>`;
+
   const mCards = document.querySelectorAll("#mobileCards .m-card");
   document.querySelectorAll("#planBody tr").forEach((el, i) => {
     el.classList.toggle("row-next", i === nextIdx);
   });
   mCards.forEach((el, i) => {
-    el.classList.toggle("row-next", i === nextIdx);
+    const isNext = i === nextIdx;
+    el.classList.toggle("row-next", isNext);
+    const segEl = el.querySelector(".m-seg");
+    if (segEl) {
+      segEl.innerHTML = isNext
+        ? (remKm < 0.1
+            ? `<strong style="color:#4ade80;">已抵達</strong>`
+            : `<strong style="color:var(--accent);">剩 ${remKm.toFixed(1)} km</strong> / <strong style="color:var(--amber);">+${remGain.toFixed(0)} m</strong>`)
+        : el.dataset.staticSeg;
+    }
   });
   const mWrap = document.getElementById("mobileCards");
   if (window.innerWidth <= 768 && mWrap && mCards[nextIdx] && window._lastMIdx !== nextIdx) {
     window._lastMIdx = nextIdx;
     mWrap.scrollTop = mCards[nextIdx].offsetTop;
   }
-  const remKm = Math.max(0, nextCp.dist - dKm);
-  const remGain = Math.max(0, nextCp.gain - pt[4]);
-  const shortNext = nextCp.name.replace(/ \(.*\)/, "");
-  const isMobile = window.innerWidth <= 768;
-  document.getElementById("hudNextLabel").innerHTML = isMobile
-    ? `下一站 <span class="hud-next-title">${shortNext}</span>`
-    : `下一站：${shortNext}`;
-  const leftHtml = remKm < 0.1
-    ? `<span style="color:#4ade80;">已抵達 ${shortNext}</span>`
-    : `<span style="color:var(--accent);">剩 ${remKm.toFixed(1)} km</span> <span style="color:var(--muted);font-weight:400;">/</span> <span style="color:var(--amber);">+${remGain.toFixed(0)} m</span>`;
-  const targetClock = nextRow && nextRow.arrMs ? formatClockShort(nextRow.arrMs) : formatClockShort(estimateMsAtDist(nextCp.dist));
-  document.getElementById("hudNear").innerHTML = isMobile
-    ? `<span>${leftHtml}</span><span style="font-size:0.96rem;color:var(--text);">目標 ${targetClock} 到</span>`
-    : leftHtml;
 
   cursorMarker.setLatLng([pt[0], pt[1]]);
 }
@@ -1133,8 +1138,12 @@ document.getElementById("gpsBtn").addEventListener("click", () => {
   );
 });
 
-window.addEventListener("resize", drawElevation);
+window.addEventListener("resize", () => {
+  map.invalidateSize();
+  drawElevation();
+});
 recalcPlan();
+setTimeout(() => { map.invalidateSize(); drawElevation(); }, 100);
 </script>
 </body>
 </html>
