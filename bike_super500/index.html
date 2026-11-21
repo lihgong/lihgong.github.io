@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>超極騎士 中部秘境 500K — 路線與配速規劃</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel2: #273449;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --amber: #f59e0b;
+      --green: #22c55e;
+      --purple: #a855f7;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      padding: 12px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 1.35rem; font-weight: 700; }
+    .sub-badge { font-size: 0.92rem; color: var(--muted); margin-top: 2px; }
+    .top-kpis { display: flex; flex-wrap: wrap; gap: 10px; }
+    .kpi {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 0.94rem;
+    }
+    .kpi strong { color: var(--accent); font-size: 1.1rem; }
+    .kpi.warn strong { color: var(--amber); }
+    .kpi.ok strong { color: var(--green); }
+    .kpi.danger strong { color: var(--red); }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 14px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    /* Map */
+    .map-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.94rem;
+      gap: 10px;
+    }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .legend-item {
+      display: inline-flex; align-items: center; gap: 5px;
+      color: var(--muted); font-size: 0.9rem;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    #map { width: 100%; height: 400px; background: #0b1220; }
+    .leaflet-tooltip.cp-label {
+      background: rgba(15, 23, 42, 0.88);
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      pointer-events: none;
+    }
+    .leaflet-tooltip.cp-label::before { display: none; }
+    .leaflet-tooltip.cp-label.lbl-cp { border-color: #f59e0b; color: #fde68a; }
+    .leaflet-tooltip.cp-label.lbl-supply { border-color: #38bdf8; color: #bae6fd; }
+    .leaflet-tooltip.cp-label.lbl-midpoint { border-color: #a855f7; color: #e9d5ff; }
+    .leaflet-tooltip.cp-label.lbl-start,
+    .leaflet-tooltip.cp-label.lbl-finish { border-color: #22c55e; color: #bbf7d0; }
+    .leaflet-tooltip.cp-label.lbl-meal { box-shadow: 0 0 0 1px #fb7185, 0 2px 6px rgba(0,0,0,0.5); }
+    .meal-btn {
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 0.78rem;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+    }
+    .meal-btn.active {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: #fb7185;
+      color: #fda4af;
+      font-weight: 600;
+    }
+
+    /* Elevation Profile */
+    .elev-wrap { padding: 12px 14px; }
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    @media (min-width: 960px) {
+      .hud {
+        grid-template-columns: 1fr 0.75fr 0.85fr 0.9fr 1.05fr 2.4fr;
+      }
+    }
+    .hud-box {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      min-width: 0;
+    }
+    .hud-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hud-val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hud-val.accent { color: var(--accent); }
+    .hud-val.amber { color: var(--amber); }
+
+    .canvas-box {
+      position: relative;
+      width: 100%;
+      height: 230px;
+      cursor: crosshair;
+      user-select: none;
+    }
+    #elevCanvas { width: 100%; height: 100%; display: block; }
+    .scrubber-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    #distSlider { flex: 1; accent-color: var(--accent); cursor: pointer; }
+
+    /* Controls & Table */
+    .controls {
+      padding: 12px 14px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .ctrl-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.96rem;
+    }
+    select, input[type="number"], input[type="text"], button {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.94rem;
+    }
+    button {
+      cursor: pointer;
+      background: var(--panel);
+      transition: background 0.15s;
+    }
+    button:hover { background: var(--border); }
+    button.primary {
+      background: #0284c7;
+      border-color: #0ea5e9;
+      font-weight: 600;
+    }
+    button.primary:hover { background: #0369a1; }
+    .preset-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #162032;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.94rem;
+    }
+    .preset-btn {
+      padding: 6px 13px;
+      border-radius: 7px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+    }
+    .preset-btn.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #f1f5f9;
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.96rem;
+      white-space: nowrap;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+    }
+    th {
+      background: #162032;
+      color: var(--muted);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    th:first-child, td:first-child,
+    th:nth-child(2), td:nth-child(2),
+    th:last-child, td:last-child { text-align: left; }
+    tr.row-clickable { cursor: pointer; }
+    tr.row-clickable:hover { background: rgba(56, 189, 248, 0.08); }
+    tr.row-midpoint { background: rgba(168, 85, 247, 0.10); }
+    tr.row-cp { background: rgba(245, 158, 11, 0.05); }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .tag-start, .tag-finish { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .tag-cp { background: rgba(245, 158, 11, 0.22); color: #fbbf24; }
+    .tag-supply { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .tag-midpoint { background: rgba(168, 85, 247, 0.25); color: #c084fc; }
+    .tag-peak, .tag-valley { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+
+    .buf-ok { color: #4ade80; font-weight: 600; }
+    .buf-tight { color: #fbbf24; font-weight: 600; }
+    .buf-late { color: #f87171; font-weight: 700; }
+
+    .rest-input { width: 64px; text-align: right; padding: 4px 6px; }
+    .note-input { width: 145px; padding: 4px 8px; font-size: 0.92rem; }
+
+    /* Mobile Responsive Layout */
+    #mobileCards { display: none; }
+    #toggleCtrlBtn { display: none; }
+    .m-card {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .m-card.row-midpoint { background: rgba(168, 85, 247, 0.12); }
+    .m-card.row-cp { background: rgba(245, 158, 11, 0.05); }
+    .m-row1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.98rem;
+    }
+    .m-km {
+      color: var(--accent);
+      font-weight: 700;
+      min-width: 52px;
+    }
+    .m-name {
+      flex: 1;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .m-time {
+      font-weight: 600;
+      white-space: nowrap;
+      font-size: 0.92rem;
+    }
+    .m-row2 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .m-note {
+      background: rgba(56, 189, 248, 0.12);
+      color: #bae6fd;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+    @media (max-width: 768px) {
+      header { padding: 10px 12px; }
+      header h1 { font-size: 1.1rem; }
+      .sub-badge { font-size: 0.8rem; }
+      .top-kpis { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+      .kpi { font-size: 0.84rem; padding: 5px 8px; }
+      .kpi strong { font-size: 0.96rem; }
+      .container { padding: 10px 10px 30px; gap: 10px; }
+      #map { height: 230px; }
+      .legend { gap: 8px; }
+      .legend-item { font-size: 0.78rem; }
+      .hud { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .hud-hide-m { display: none; }
+      .hud-val { font-size: 1.1rem; }
+      .canvas-box { height: 170px; }
+      .scrubber-hint { display: none; }
+      .preset-bar { padding: 8px 10px; gap: 6px; }
+      .preset-btn { flex: 1; padding: 6px 6px; font-size: 0.85rem; text-align: center; }
+      #presetSummary { width: 100%; margin-left: 0 !important; font-size: 0.82rem; }
+      #toggleCtrlBtn {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--panel2);
+        border: none;
+        border-bottom: 1px solid var(--border);
+        border-radius: 0;
+        text-align: left;
+        color: var(--accent);
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .controls { display: none; padding: 10px; }
+      .controls.m-open { display: flex; }
+      .table-wrap { display: none; }
+      #mobileCards { display: block; }
+    }
+
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body { padding: 14px 16px; overflow-y: auto; }
+    pre#stickerText {
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>超極騎士 — 中部秘境 500K 互動路線與配速規劃</h1>
+    <div class="sub-badge">34H 挑戰組（2027/01/01 06:00 出發｜官方 CP1~CP13 檢錄與關門時間）</div>
+  </div>
+  <div class="top-kpis">
+    <div class="kpi">總里程 <strong>501.4 km</strong></div>
+    <div class="kpi">清洗後總爬升 <strong>+9,243 m</strong></div>
+    <div class="kpi ok" id="kpiFinish">預估完賽 <strong>--</strong></div>
+    <div class="kpi warn" id="kpiBuffer">34H 關門餘裕 <strong>--</strong></div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Map Card -->
+  <div class="card">
+    <div class="map-bar">
+      <div class="legend">
+        <span class="legend-item"><span class="dot" style="background:#22c55e"></span>起點 / 終點</span>
+        <span class="legend-item"><span class="dot" style="background:#f59e0b"></span>官方檢查點 (CP1~CP13)</span>
+        <span class="legend-item"><span class="dot" style="background:#38bdf8"></span>爬坡前超商補給</span>
+        <span class="legend-item"><span class="dot" style="background:#a855f7"></span>300K 中繼 (箱根生活館)</span>
+        <span class="legend-item"><span class="dot" style="background:#ef4444"></span>目前游標位置</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+          <input type="checkbox" id="showLabels" /> 顯示站點名稱
+        </label>
+        <button id="resetZoomBtn">顯示全路線</button>
+      </div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <!-- Elevation Profile Card -->
+  <div class="card elev-wrap">
+    <div class="hud">
+      <div class="hud-box">
+        <div class="hud-label">目前里程</div>
+        <div class="hud-val accent" id="hudDist">0.0 km</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">海拔高度</div>
+        <div class="hud-val" id="hudEle">105 m</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">累計爬升</div>
+        <div class="hud-val amber" id="hudGain">0 m</div>
+      </div>
+      <div class="hud-box hud-hide-m">
+        <div class="hud-label">前後 1km 平均坡度</div>
+        <div class="hud-val" id="hudGrade">0.0%</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">預估通過時刻</div>
+        <div class="hud-val" id="hudTime">1/1 06:00</div>
+      </div>
+      <div class="hud-box hud-hide-m">
+        <div class="hud-label">最近檢查點 / 補給站</div>
+        <div class="hud-val" id="hudNear" style="font-size:1.05rem;">起點 豬事圓滿公園</div>
+      </div>
+    </div>
+    <div class="canvas-box" id="canvasBox" title="滑鼠左右移動瀏覽，或使用滾輪微調里程（按住 Shift 滾輪可快轉 ±10km）">
+      <canvas id="elevCanvas"></canvas>
+    </div>
+    <div class="scrubber-row">
+      <span>0 km</span>
+      <input type="range" id="distSlider" min="0" max="501.44" step="0.5" value="0" />
+      <span>501.4 km</span>
+      <span class="scrubber-hint" style="color:var(--accent)">提示：在高度圖上滾動滑鼠滾輪可直接前後推進里程（Shift+滾輪 ±10km）</span>
+    </div>
+  </div>
+
+  <!-- Pacing & Supply Table Card -->
+  <div class="card">
+    <div class="preset-bar">
+      <span style="color:var(--muted);font-weight:600;">完賽目標檔位：</span>
+      <button type="button" class="preset-btn" data-preset="26H">26H</button>
+      <button type="button" class="preset-btn" data-preset="28H">28H</button>
+      <button type="button" class="preset-btn active" data-preset="32H">32H</button>
+      <span id="presetSummary" style="margin-left:auto;color:var(--muted);font-size:0.88rem;">純騎 --h ｜ 總休 --h</span>
+    </div>
+    <button type="button" id="toggleCtrlBtn">⚙️ 進階配速設定與匯出（點擊展開）</button>
+    <div class="controls" id="ctrlPanel">
+      <div class="ctrl-group">
+        <label>配速模型：
+          <select id="modelSelect">
+            <option value="A">模型 A：坡度線性降速模型</option>
+            <option value="B">模型 B：VAM 爬升速率模型</option>
+          </select>
+        </label>
+        <label>平路/下坡上限 (km/h)：
+          <input type="number" id="flatSpeed" value="24.9" step="0.5" min="15" max="35" style="width:68px" />
+        </label>
+        <label id="slopeKWrap">每1%坡度降速：
+          <input type="number" id="slopeKInput" value="2.79" step="0.05" min="0.5" max="6" style="width:72px" />
+        </label>
+        <label id="vamWrap" style="display:none;">爬坡 VAM (m/h)：
+          <input type="number" id="vamInput" value="600" step="20" min="300" max="1200" style="width:72px" />
+        </label>
+        <label>後段疲勞係數：
+          <select id="fatigueSelect">
+            <option value="1.0">無衰減 (100%)</option>
+            <option value="0.92">300K 後微降速 (92%)</option>
+            <option value="0.90">300K 後穩健降速 (90%)</option>
+            <option value="0.85" selected>300K 後保守降速 (85%)</option>
+          </select>
+        </label>
+      </div>
+      <div class="ctrl-group">
+        <button id="exportCsvBtn">匯出 CSV (試算表用)</button>
+        <button class="primary" id="stickerBtn">產生自行車上管貼</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>累計里程</th>
+            <th>地點 (點擊定位)</th>
+            <th>預計抵達</th>
+            <th>休息(分)</th>
+            <th>區段時間</th>
+            <th>間距</th>
+            <th>區間爬升</th>
+            <th>累計爬升</th>
+            <th>海拔</th>
+            <th>段均速</th>
+            <th>備註 (可編輯)</th>
+          </tr>
+        </thead>
+        <tbody id="planBody"></tbody>
+      </table>
+    </div>
+    <div id="mobileCards"></div>
+  </div>
+</div>
+
+<!-- Sticker Modal -->
+<div class="modal-backdrop" id="stickerModal">
+  <div class="modal">
+    <div class="modal-head">
+      <strong>自行車上管貼（依目前配速與休息設定即時產生）</strong>
+      <div style="display:flex;gap:8px;">
+        <button id="copyStickerBtn" class="primary">複製文字</button>
+        <button id="closeStickerBtn">關閉</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.8rem;color:var(--muted);margin-top:0;">格式：<code>里程(km) 抵達時刻 地點 (+區間爬升) [休息]</code></p>
+      <pre id="stickerText"></pre>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="route_data.js"></script>
+<script>
+const track = ROUTE_DATA.track; // [lat, lon, ele, dist, gain]
+const checkpoints = ROUTE_DATA.checkpoints;
+const MAX_DIST = track[track.length - 1][3];
+
+// 預設吃飯點 (依 4 大規則：超商CP、長爬坡前、大會水食CP、3H極限)
+const DEFAULT_MEALS = [
+  "東勢東坑全家 (大雪山腳)",
+  "CP1 大雪山收費站",
+  "東勢谷底 (上司馬限前超商)",
+  "CP2 司馬限林道停車場(13.7K)",
+  "東勢谷底 (下司馬限回東勢)",
+  "CP3 全家 國姓水長流店",
+  "CP4 曲冰遺址 (投83 17K)",
+  "霧社 7-11 霧社門市 (24H)",
+  "CP5 7-11 見晴園門市",
+  "CP6 埔里箱根生活館 (中繼)",
+  "CP7 全家 魚池伊達邵店",
+  "CP8 萊爾富 二水源泉門市",
+  "CP9 7-11 猴探井門市",
+  "CP10 全家 員林青山店",
+  "CP12 萊爾富 花壇八卦窯店",
+  "CP13 萊爾富 國姓長壽巷店"
+];
+checkpoints.forEach(cp => {
+  cp.meal = DEFAULT_MEALS.includes(cp.name);
+});
+
+const START_MS = new Date("2027-01-01T06:00:00+08:00").getTime();
+const CUTOFF_28_MS = new Date("2027-01-02T10:00:00+08:00").getTime();
+const CUTOFF_34_MS = new Date("2027-01-02T16:00:00+08:00").getTime();
+
+let currentSlopeK = 2.79;
+let activeCutoffMs = CUTOFF_34_MS;
+let activeCutoffLabel = "34H 關門餘裕";
+
+const PRESETS = {
+  "26H": { flat: 27.5, slopeK: 2.55, fatigue: "0.92", restNorm: 6, restMid: 15, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
+  "28H": { flat: 26.0, slopeK: 2.65, fatigue: "0.90", restNorm: 8, restMid: 20, cutoffMs: CUTOFF_28_MS, cutoffLabel: "28H 關門餘裕" },
+  "32H": { flat: 24.9, slopeK: 2.79, fatigue: "0.85", restNorm: 10, restMid: 30, cutoffMs: CUTOFF_34_MS, cutoffLabel: "34H 關門餘裕" }
+};
+
+// --- Map Setup ---
+const map = L.map("map", { zoomControl: true });
+const nlscMap = L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", {
+  attribution: "&copy; 國土測繪中心 NLSC",
+  maxZoom: 19
+}).addTo(map);
+
+const nlscPhoto = L.tileLayer("https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}", {
+  attribution: "&copy; 國土測繪中心 NLSC 正射影像",
+  maxZoom: 19
+});
+
+const esriStreet = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+  attribution: "&copy; Esri",
+  maxZoom: 19
+});
+
+const openTopo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+  attribution: "&copy; OpenTopoMap",
+  maxZoom: 17
+});
+
+L.control.layers({
+  "台灣電子地圖 (國土測繪中心)": nlscMap,
+  "台灣衛星影像 (國土測繪中心)": nlscPhoto,
+  "地形等高線 (OpenTopoMap)": openTopo,
+  "街道地圖 (Esri)": esriStreet
+}, null, { position: "topright" }).addTo(map);
+
+const latlngs = track.map(p => [p[0], p[1]]);
+const routeLine = L.polyline(latlngs, { color: "#38bdf8", weight: 4, opacity: 0.85 }).addTo(map);
+map.fitBounds(routeLine.getBounds(), { padding: [24, 24] });
+
+document.getElementById("resetZoomBtn").addEventListener("click", () => {
+  map.fitBounds(routeLine.getBounds(), { padding: [24, 24] });
+});
+
+const typeColors = {
+  start: "#22c55e",
+  finish: "#22c55e",
+  cp: "#f59e0b",
+  supply: "#38bdf8",
+  midpoint: "#a855f7",
+  peak: "#64748b",
+  valley: "#64748b"
+};
+
+const cpLabelLayers = [];
+checkpoints.forEach(cp => {
+  const isMinor = cp.type === "peak" || cp.type === "valley";
+  const marker = L.circleMarker([cp.lat, cp.lon], {
+    radius: isMinor ? 4 : 7,
+    color: "#0f172a",
+    weight: 1.5,
+    fillColor: typeColors[cp.type] || "#94a3b8",
+    fillOpacity: isMinor ? 0.65 : 0.95
+  }).addTo(map);
+  marker.bindTooltip(`<b>${cp.name}</b><br>${cp.dist} km｜海拔 ${cp.ele} m｜累計爬升 ${cp.gain} m`, { direction: "top" });
+  marker.on("click", () => setCursorDist(cp.dist, true));
+
+  if (!isMinor) {
+    const lbl = L.tooltip({
+      permanent: true,
+      direction: "right",
+      offset: [8, 0],
+      className: `cp-label lbl-${cp.type}`
+    })
+      .setLatLng([cp.lat, cp.lon])
+      .setContent(getMapLabelText(cp));
+    cpLabelLayers.push({ cp, lbl });
+  }
+});
+
+function getMapLabelText(cp) {
+  return cp.name.replace(/ \(.*\)/, "");
+}
+
+function refreshMapLabels() {
+  const show = document.getElementById("showLabels").checked;
+  cpLabelLayers.forEach(({ cp, lbl }) => {
+    lbl.setContent(getMapLabelText(cp));
+    if (show) lbl.addTo(map);
+    else map.removeLayer(lbl);
+  });
+}
+
+document.getElementById("showLabels").addEventListener("change", refreshMapLabels);
+
+const cursorMarker = L.circleMarker([track[0][0], track[0][1]], {
+  radius: 8,
+  color: "#ffffff",
+  weight: 2.5,
+  fillColor: "#ef4444",
+  fillOpacity: 1
+}).addTo(map);
+
+// --- Pacing Calculation ---
+let computedRows = [];
+
+function formatClock(ms) {
+  const d = new Date(ms);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const isNight = d.getHours() >= 18 || d.getHours() < 6;
+  return `${m}/${day} ${hh}:${mm} ${isNight ? "🌙" : "☀️"}`;
+}
+
+function formatClockPlain(ms) {
+  const d = new Date(ms);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${m}/${day} ${hh}:${mm}`;
+}
+
+function formatClockShort(ms) {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatDuration(h) {
+  const totM = Math.round(h * 60);
+  const hh = Math.floor(totM / 60);
+  const mm = totM % 60;
+  return `${hh}h${String(mm).padStart(2, "0")}m`;
+}
+
+function recalcPlan() {
+  const model = document.getElementById("modelSelect").value;
+  const flatCap = parseFloat(document.getElementById("flatSpeed").value) || 24.9;
+  const slopeK = parseFloat(document.getElementById("slopeKInput").value) || 2.79;
+  const vam = parseFloat(document.getElementById("vamInput").value) || 600;
+  const fatigue = parseFloat(document.getElementById("fatigueSelect").value) || 1.0;
+
+  let cumHours = 0;
+  let lastMealRideH = 0;
+  let cumRideH = 0;
+  let cumRestMin = 0;
+  computedRows = checkpoints.map((cp, i) => {
+    if (i === 0) {
+      const departMs = START_MS + (cp.rest * 60000);
+      cumHours += cp.rest / 60;
+      cumRestMin += cp.rest;
+      return { ...cp, segDist: 0, segGain: 0, grade: 0, speed: 0, rideH: 0, sinceMealH: 0, arrHours: 0, arrMs: START_MS, departMs };
+    }
+    const prev = checkpoints[i - 1];
+    const segDist = +(cp.dist - prev.dist).toFixed(2);
+    const segGain = +(cp.gain - prev.gain).toFixed(1);
+    const grade = segDist > 0 ? (segGain / (segDist * 1000)) * 100 : 0;
+
+    let speed;
+    if (model === "A") {
+      speed = Math.max(5.0, Math.min(flatCap, flatCap - slopeK * grade));
+    } else {
+      const tFlat = segDist / flatCap;
+      const tClimb = segGain / vam;
+      const tSeg = Math.max(tFlat, tClimb);
+      speed = tSeg > 0 ? segDist / tSeg : flatCap;
+    }
+
+    if (cp.dist > 300) {
+      speed = speed * fatigue;
+    }
+
+    const rideH = segDist > 0 ? segDist / speed : 0;
+    cumRideH += rideH;
+    const sinceMealH = cumRideH - lastMealRideH;
+    if (cp.meal) {
+      lastMealRideH = cumRideH;
+    }
+
+    const arrHours = cumHours + rideH;
+    const arrMs = START_MS + arrHours * 3600000;
+    const departHours = arrHours + (cp.rest / 60);
+    const departMs = START_MS + departHours * 3600000;
+    cumHours = departHours;
+    if (i < checkpoints.length - 1) cumRestMin += cp.rest;
+
+    return { ...cp, segDist, segGain, grade, speed, rideH, sinceMealH, arrHours, arrMs, departMs };
+  });
+
+  const last = computedRows[computedRows.length - 1];
+  const bufH = (activeCutoffMs - last.arrMs) / 3600000;
+  document.querySelector("#kpiFinish strong").textContent = formatClock(last.arrMs);
+  const kpiBuf = document.getElementById("kpiBuffer");
+  kpiBuf.innerHTML = `${activeCutoffLabel} <strong>${(bufH >= 0 ? "+" : "") + bufH.toFixed(1)} 小時</strong>`;
+  kpiBuf.className = "kpi " + (bufH >= 1 ? "ok" : bufH >= 0 ? "warn" : "danger");
+  document.getElementById("presetSummary").textContent =
+    `總計 ${last.arrHours.toFixed(1)}h（純騎 ${cumRideH.toFixed(1)}h ＋ 總休 ${(cumRestMin / 60).toFixed(1)}h）`;
+
+  renderTable();
+  updateHUD(currentDist);
+  drawElevation();
+}
+
+function renderTable() {
+  const tbody = document.getElementById("planBody");
+  const mWrap = document.getElementById("mobileCards");
+  tbody.innerHTML = "";
+  mWrap.innerHTML = "";
+
+  computedRows.forEach((r, idx) => {
+    const tr = document.createElement("tr");
+    tr.className = "row-clickable" +
+      (r.type === "midpoint" ? " row-midpoint" : r.type === "cp" ? " row-cp" : "");
+
+    tr.innerHTML = `
+      <td><strong>${r.dist.toFixed(1)}</strong></td>
+      <td style="text-align:left;"><strong>${r.name}</strong></td>
+      <td>${formatClock(r.arrMs)}</td>
+      <td><input type="number" class="rest-input" min="0" max="300" step="5" value="${r.rest}" data-idx="${idx}" /></td>
+      <td>${idx === 0 ? "-" : formatDuration(r.rideH)}</td>
+      <td>${idx === 0 ? "-" : r.segDist.toFixed(1)}</td>
+      <td>${idx === 0 ? "-" : r.segGain.toFixed(0)}</td>
+      <td>${r.gain.toFixed(0)}</td>
+      <td>${r.ele.toFixed(0)}m</td>
+      <td>${idx === 0 ? "-" : r.speed.toFixed(1)}</td>
+      <td><input type="text" class="note-input" value="${r.note.replace(/"/g, '&quot;')}" data-idx="${idx}" /></td>
+    `;
+
+    tr.addEventListener("click", (e) => {
+      if (e.target.tagName === "INPUT") return;
+      setCursorDist(r.dist, true);
+    });
+
+    tbody.appendChild(tr);
+
+    const card = document.createElement("div");
+    card.className = "m-card" +
+      (r.type === "midpoint" ? " row-midpoint" : r.type === "cp" ? " row-cp" : "");
+    const segInfo = idx === 0 ? "起點" : `+${r.segDist.toFixed(1)}km / +${r.segGain.toFixed(0)}m · ${formatDuration(r.rideH)}`;
+    const noteBadge = r.note ? `<span class="m-note">${r.note}</span>` : "";
+    card.innerHTML = `
+      <div class="m-row1">
+        <span class="m-km">${r.dist.toFixed(1)}k</span>
+        <span class="m-name">${r.name}</span>
+        <span class="m-time">${formatClock(r.arrMs)}</span>
+      </div>
+      <div class="m-row2">
+        <span>${segInfo} ${noteBadge}</span>
+        <span>休 <input type="number" class="rest-input" min="0" max="300" step="5" value="${r.rest}" data-idx="${idx}" style="width:48px;padding:2px 4px;" /> 分</span>
+      </div>
+    `;
+    card.addEventListener("click", (e) => {
+      if (e.target.tagName === "INPUT") return;
+      setCursorDist(r.dist, true);
+    });
+    mWrap.appendChild(card);
+  });
+
+  document.querySelectorAll(".rest-input").forEach(inp => {
+    inp.addEventListener("change", (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      checkpoints[idx].rest = Math.max(0, parseInt(e.target.value, 10) || 0);
+      recalcPlan();
+    });
+  });
+
+  tbody.querySelectorAll(".note-input").forEach(inp => {
+    inp.addEventListener("change", (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      checkpoints[idx].note = e.target.value;
+    });
+  });
+}
+
+// --- Elevation Chart & Scrubber ---
+let currentDist = 0;
+const canvas = document.getElementById("elevCanvas");
+const ctx = canvas.getContext("2d");
+
+function interpolateAtDist(dKm) {
+  if (dKm <= 0) return track[0];
+  if (dKm >= MAX_DIST) return track[track.length - 1];
+  let lo = 0, hi = track.length - 1;
+  while (lo < hi - 1) {
+    const mid = (lo + hi) >> 1;
+    if (track[mid][3] <= dKm) lo = mid; else hi = mid;
+  }
+  const p1 = track[lo], p2 = track[hi];
+  const span = p2[3] - p1[3];
+  const t = span > 0 ? (dKm - p1[3]) / span : 0;
+  return [
+    p1[0] + (p2[0] - p1[0]) * t,
+    p1[1] + (p2[1] - p1[1]) * t,
+    p1[2] + (p2[2] - p1[2]) * t,
+    dKm,
+    p1[4] + (p2[4] - p1[4]) * t
+  ];
+}
+
+function estimateMsAtDist(dKm) {
+  if (!computedRows.length) return START_MS;
+  for (let i = 1; i < computedRows.length; i++) {
+    const prev = computedRows[i - 1];
+    const curr = computedRows[i];
+    if (dKm <= curr.dist) {
+      const span = curr.dist - prev.dist;
+      const t = span > 0 ? (dKm - prev.dist) / span : 0;
+      return prev.departMs + (curr.arrMs - prev.departMs) * t;
+    }
+  }
+  return computedRows[computedRows.length - 1].arrMs;
+}
+
+function updateHUD(dKm) {
+  const pt = interpolateAtDist(dKm);
+  const pBefore = interpolateAtDist(Math.max(0, dKm - 0.5));
+  const pAfter = interpolateAtDist(Math.min(MAX_DIST, dKm + 0.5));
+  const dxM = (pAfter[3] - pBefore[3]) * 1000;
+  const grade = dxM > 10 ? ((pAfter[2] - pBefore[2]) / dxM) * 100 : 0;
+
+  document.getElementById("hudDist").textContent = `${dKm.toFixed(1)} km`;
+  document.getElementById("hudEle").textContent = `${pt[2].toFixed(0)} m`;
+  document.getElementById("hudGain").textContent = `+${pt[4].toFixed(0)} m`;
+  document.getElementById("hudGrade").textContent = `${grade >= 0 ? "+" : ""}${grade.toFixed(1)}%`;
+  document.getElementById("hudTime").textContent = formatClock(estimateMsAtDist(dKm));
+
+  let nearest = checkpoints[0];
+  let bestD = Infinity;
+  checkpoints.forEach(cp => {
+    const diff = Math.abs(cp.dist - dKm);
+    if (diff < bestD) { bestD = diff; nearest = cp; }
+  });
+  const dir = nearest.dist >= dKm ? "前方" : "剛過";
+  document.getElementById("hudNear").textContent = `${nearest.name} (${dir} ${bestD.toFixed(1)} km)`;
+
+  cursorMarker.setLatLng([pt[0], pt[1]]);
+}
+
+function setCursorDist(dKm, panMap = false) {
+  currentDist = Math.max(0, Math.min(MAX_DIST, dKm));
+  document.getElementById("distSlider").value = currentDist.toFixed(1);
+  updateHUD(currentDist);
+  drawElevation();
+  if (panMap) {
+    const pt = interpolateAtDist(currentDist);
+    map.setView([pt[0], pt[1]], Math.max(map.getZoom(), 11));
+  }
+}
+
+function drawElevation() {
+  const box = document.getElementById("canvasBox");
+  const dpr = window.devicePixelRatio || 1;
+  const w = box.clientWidth;
+  const h = box.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const padL = 46, padR = 14, padT = 18, padB = 26;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+  const xOf = d => padL + (d / MAX_DIST) * plotW;
+  const yOf = e => padT + plotH - ((e - 0) / (2150 - 0)) * plotH;
+
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.strokeStyle = "rgba(148,163,184,0.16)";
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "11px sans-serif";
+  ctx.textAlign = "right";
+  [0, 500, 1000, 1500, 2000].forEach(ele => {
+    const y = yOf(ele);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(ele + "m", padL - 6, y + 4);
+  });
+
+  ctx.beginPath();
+  ctx.moveTo(xOf(track[0][3]), yOf(0));
+  track.forEach(p => ctx.lineTo(xOf(p[3]), yOf(p[2])));
+  ctx.lineTo(xOf(track[track.length - 1][3]), yOf(0));
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+  grad.addColorStop(0, "rgba(56, 189, 248, 0.45)");
+  grad.addColorStop(1, "rgba(56, 189, 248, 0.05)");
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  track.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(xOf(p[3]), yOf(p[2]));
+    else ctx.lineTo(xOf(p[3]), yOf(p[2]));
+  });
+  ctx.strokeStyle = "#38bdf8";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  checkpoints.forEach(cp => {
+    if (cp.type === "peak" || cp.type === "valley") return;
+    const x = xOf(cp.dist);
+    ctx.strokeStyle = typeColors[cp.type] || "#94a3b8";
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = typeColors[cp.type] || "#e2e8f0";
+    ctx.beginPath();
+    ctx.arc(x, yOf(cp.ele), 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "#94a3b8";
+  ctx.textAlign = "center";
+  [0, 100, 200, 300, 400, 500].forEach(km => {
+    ctx.fillText(km + "km", xOf(km), h - 6);
+  });
+
+  const cx = xOf(currentDist);
+  const pt = interpolateAtDist(currentDist);
+  const cy = yOf(pt[2]);
+  ctx.strokeStyle = "#ef4444";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx, padT); ctx.lineTo(cx, padT + plotH); ctx.stroke();
+
+  ctx.fillStyle = "#ef4444";
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+const canvasBox = document.getElementById("canvasBox");
+canvasBox.addEventListener("mousemove", (e) => {
+  const rect = canvasBox.getBoundingClientRect();
+  const padL = 46, padR = 14;
+  const plotW = rect.width - padL - padR;
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left - padL) / plotW));
+  setCursorDist(ratio * MAX_DIST, false);
+});
+
+canvasBox.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const step = e.shiftKey ? 10 : 2;
+  const delta = e.deltaY > 0 ? step : -step;
+  setCursorDist(currentDist + delta, false);
+}, { passive: false });
+
+document.getElementById("distSlider").addEventListener("input", (e) => {
+  setCursorDist(parseFloat(e.target.value), false);
+});
+
+document.getElementById("modelSelect").addEventListener("change", (e) => {
+  const isB = e.target.value === "B";
+  document.getElementById("vamWrap").style.display = isB ? "inline-flex" : "none";
+  document.getElementById("slopeKWrap").style.display = isB ? "none" : "inline-flex";
+  document.getElementById("flatSpeed").value = isB ? "22.0" : "24.9";
+  recalcPlan();
+});
+document.getElementById("flatSpeed").addEventListener("change", recalcPlan);
+document.getElementById("slopeKInput").addEventListener("change", recalcPlan);
+document.getElementById("vamInput").addEventListener("change", recalcPlan);
+document.getElementById("fatigueSelect").addEventListener("change", recalcPlan);
+
+document.getElementById("exportCsvBtn").addEventListener("click", () => {
+  const headers = ["地點","類型","海拔(m)","累計里程(km)","累計爬升(m)","間距(km)","區間爬升(m)","坡度%","休息(分)","段均速(km/h)","預計抵達","官方關門","備註"];
+  const lines = [headers.join(",")];
+  computedRows.forEach(r => {
+    const cStr = r.cutoff ? formatClockPlain(new Date(r.cutoff).getTime()) : "-";
+    lines.push([
+      `"${r.name}"`, r.type, r.ele, r.dist, r.gain,
+      r.segDist, r.segGain, r.grade.toFixed(2), r.rest,
+      r.speed.toFixed(1), `"${formatClockPlain(r.arrMs)}"`, `"${cStr}"`, `"${r.note}"`
+    ].join(","));
+  });
+  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "super500_plan.csv";
+  a.click();
+});
+
+document.getElementById("stickerBtn").addEventListener("click", () => {
+  const lines = computedRows.map(r => {
+    const kmStr = String(Math.round(r.dist)).padStart(3, "0");
+    const clk = formatClockShort(r.arrMs);
+    const segG = r.segGain > 0 ? `+${Math.round(r.segGain)}m` : "0m";
+    const restTag = r.rest > 0 ? ` [休${r.rest}分]` : "";
+    return `${kmStr}  ${clk}  ${r.name}  (${segG})${restTag}`;
+  });
+  document.getElementById("stickerText").textContent = lines.join("\n");
+  document.getElementById("stickerModal").classList.add("open");
+});
+document.getElementById("closeStickerBtn").addEventListener("click", () => {
+  document.getElementById("stickerModal").classList.remove("open");
+});
+document.getElementById("copyStickerBtn").addEventListener("click", () => {
+  navigator.clipboard.writeText(document.getElementById("stickerText").textContent);
+  document.getElementById("copyStickerBtn").textContent = "已複製！";
+  setTimeout(() => document.getElementById("copyStickerBtn").textContent = "複製文字", 1500);
+});
+
+document.querySelectorAll(".preset-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const key = btn.dataset.preset;
+    const p = PRESETS[key];
+    if (!p) return;
+    document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    document.getElementById("modelSelect").value = "A";
+    document.getElementById("vamWrap").style.display = "none";
+    document.getElementById("slopeKWrap").style.display = "inline-flex";
+    document.getElementById("flatSpeed").value = p.flat;
+    document.getElementById("slopeKInput").value = p.slopeK;
+    document.getElementById("fatigueSelect").value = p.fatigue;
+    activeCutoffMs = p.cutoffMs;
+    activeCutoffLabel = p.cutoffLabel;
+
+    checkpoints.forEach((cp, idx) => {
+      if (idx === 0 || idx === checkpoints.length - 1) cp.rest = 0;
+      else if (cp.type === "midpoint") cp.rest = p.restMid;
+      else cp.rest = p.restNorm;
+    });
+    recalcPlan();
+  });
+});
+
+document.getElementById("toggleCtrlBtn").addEventListener("click", () => {
+  const panel = document.getElementById("ctrlPanel");
+  const open = panel.classList.toggle("m-open");
+  document.getElementById("toggleCtrlBtn").textContent = open
+    ? "⚙️ 收合進階配速設定與匯出"
+    : "⚙️ 進階配速設定與匯出（點擊展開）";
+});
+
+window.addEventListener("resize", drawElevation);
+recalcPlan();
+</script>
+</body>
+</html>
