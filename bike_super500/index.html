@@ -2,7 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>超極騎士 中部秘境 500K — 路線與配速規劃</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -347,10 +350,13 @@
       .kpi strong { font-size: 0.86rem; }
       .container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 6px 8px 8px; gap: 6px; }
       .card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+      .map-card { flex: 1.75; }
+      .elev-card { flex: 0 0 auto; }
+      .plan-card { flex: 1.05; }
       #map { flex: 1; height: 100% !important; min-height: 0; }
-      .elev-wrap { padding: 6px 8px; }
+      .elev-wrap { padding: 5px 8px; }
       .hud { display: none; }
-      .canvas-box { flex: 1; height: auto !important; min-height: 0; }
+      .canvas-box { flex: none !important; height: 108px !important; }
       .scrubber-row { display: flex; margin-top: 4px; flex-shrink: 0; }
       .scrubber-hint { display: none; }
       .preset-btn { padding: 4px 10px; font-size: 0.85rem; text-align: center; }
@@ -421,12 +427,12 @@
 
 <div class="container">
   <!-- Map Card -->
-  <div class="card">
+  <div class="card map-card">
     <div id="map"></div>
   </div>
 
   <!-- Elevation Profile Card -->
-  <div class="card elev-wrap">
+  <div class="card elev-card elev-wrap">
     <div class="hud">
       <div class="hud-box hud-hide-m">
         <div class="hud-label">目前里程</div>
